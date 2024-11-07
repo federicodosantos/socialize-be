@@ -1,0 +1,318 @@
+openapi: '3.0.3'
+info:
+  title: Socialize API
+  version: '1.0'
+servers:
+  - url: http://127.0.0.1
+paths:
+  /auth/register:
+    post:
+      summary: Create new account
+      description: Allow user to create a new account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  nullable: false
+                  maxLength: 255
+                  example: john doe
+                email:
+                  type: string
+                  nullable: false
+                  format: email
+                  example: johndoe@gmail.com
+                password:
+                  type: string
+                  nullable: false
+                  example: rahasia123
+                confirm_password:
+                  type: string
+                  nullable: false
+                  example: rahasia123  
+      responses:
+        '201':
+          description: Successfully create a new account
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                    example: 28f87aa5-05cb-4067-856d-805126025637
+                  name: 
+                    type: string
+                    example : john doe
+                  email: 
+                    type: string
+                    format: email
+                    example: johndoe@gmail.com
+                  created_at:
+                    type: string
+                    format: date-time
+                    example: 2024-11-05 14:32:45
+                  updated_at:
+                    type: string
+                    format: date-time
+                    example: 2024-11-05 14:32:45
+        '409':
+          description: Status Conflict - Email already exists
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: email already exists
+        '500': 
+          $ref: "#/components/responses/internalServerError"                      
+  /auth/login:
+    post:
+      summary: User login
+      description: Allow user to login with their registered account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: 
+                  type: string
+                  format: email
+                  example: johndoe@gmail.com
+                password:
+                  type: string
+                  nullable: false
+                  example: rahasia123
+      responses:
+        '200':
+          description: Successfully to login
+          headers:
+            Set-Cookie:
+              description: Cookie yang berisi JWT token.
+              schema:
+                type: string
+                example: jwt-token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Successfully login to account
+        '401':
+          $ref: "#/components/responses/unauthorized"
+        '404':
+          description: Not Found - email not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: email not found
+        '500':  
+          $ref: "#/components/responses/internalServerError"                      
+  /auth/current-user:
+    get:
+      summary: Show current user profile
+      description: Allow authenticated user to view their own profile.
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Successfully retrieved user profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                    example: 28f87aa5-05cb-4067-856d-805126025637
+                  name: 
+                    type: string
+                    example : john doe
+                  email: 
+                    type: string
+                    format: email
+                    example: johndoe@gmail.com
+                  created_at:
+                    type: string
+                    format: date-time
+                    example: 2024-11-05 14:32:45
+                  updated_at:
+                    type: string
+                    format: date-time
+                    example: 2024-11-05 14:32:45
+        '401':
+          $ref: "#/components/responses/unauthorized"
+                  
+        '500':
+          $ref: "#/components/responses/internalServerError"
+  
+  /auth/update-data:
+    patch:
+      summary: User update their profile data
+      description: Allow user to update their user profile data
+      security:
+        - cookieAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  nullable: true
+                  example: john thor
+                email: 
+                  type: string
+                  format: email
+                  nullable: true
+                  example: johnthor@gmail.com
+                password:
+                  type: string
+                  nullable: true
+                  example: rahasia123
+      responses:
+        '200':
+          description: Successfully update user data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                    example: 28f87aa5-05cb-4067-856d-805126025637
+                  name: 
+                    type: string
+                    example : john doe
+                  email: 
+                    type: string
+                    format: email
+                    example: johndoe@gmail.com
+                  photo:
+                    type: string
+                    example: https://nctojleerwtdfjlhafsq.supabase.co/storage/v1/object/public/photo_profile/foto_federico.jpeg?t=2024-11-06T13%3A24%3A12.489Z
+                  created_at:
+                    type: string
+                    format: date-time
+                    example: 2024-11-05 14:32:45
+                  updated_at:
+                    type: string
+                    format: date-time
+                    example: 2024-11-05 14:32:45
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Bad Request
+        '401':
+          $ref: "#/components/responses/unauthorized"
+        '500':
+          $ref: "#/components/responses/internalServerError"  
+
+  /auth/update-photo:
+    patch:
+      summary: User update their profile photo 
+      description: Allow user to update their user profile photo
+      security:
+        - cookieAuth: []
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '200':
+          description: Successfully update user data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                    example: 28f87aa5-05cb-4067-856d-805126025637
+                  name: 
+                    type: string
+                    example : john doe
+                  email: 
+                    type: string
+                    format: email
+                    example: johndoe@gmail.com
+                  photo:
+                    type: string
+                    example: https://nctojleerwtdfjlhafsq.supabase.co/storage/v1/object/public/photo_profile/foto_federico.jpeg?t=2024-11-06T13%3A24%3A12.489Z
+                  created_at:
+                    type: string
+                    format: date-time
+                    example: 2024-11-05 14:32:45
+                  updated_at:
+                    type: string
+                    format: date-time
+                    example: 2024-11-05 14:32:45
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Bad Request
+        '401':
+          $ref: "#/components/responses/unauthorized"
+        '500':
+          $ref: "#/components/responses/internalServerError"
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: jwt-token  
+  responses:
+    unauthorized:
+      description: Unauthorized - User Id Not Found in Context
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: User Id Not Found in Context
+    internalServerError:
+      description: Internal Server Error - Something Went Wrong
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: An unexpected error occured. Please try again later. 
