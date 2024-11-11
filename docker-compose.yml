@@ -4,9 +4,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    restart: always
     ports:
-      - "80:80"
-      - "443:443"
+      - "80:8060"
+      - "443:8060"
     networks:
       - socialize-networks
     depends_on:
@@ -19,18 +20,19 @@ services:
 
   db:
     image: mysql:8
-    container_name: database-socialize
+    container_name: db-socialize
     env_file:
       - ./.env
     environment:
-      - MYSQL_ROOT_PASSWORD=socialize
-      - MYSQL_DATABASE=socialize_db
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
+      - MYSQL_DATABASE=${DB_NAME}
     ports:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
       - socialize-networks
+    restart: always
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 30s

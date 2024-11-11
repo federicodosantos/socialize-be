@@ -29,20 +29,20 @@ func (s SupabaseStorage) Upload(bucket string, file *multipart.FileHeader) (stri
 	defer fileData.Close()
 	fileReader := io.ReadCloser(fileData)
 	defer fileReader.Close()
-	
+
 	fileName := filepath.Base(file.Filename)
 	relativePath := fileName
-	
+
 	result, err := s.client.UploadFile(bucket, relativePath, fileReader,
 		storage_go.FileOptions{ContentType: func() *string { s := "image/jpeg"; return &s }(),
-		Upsert: func() *bool { b := true; return &b }()})
-		if err != nil {
-			return "", err 
-		}
+			Upsert: func() *bool { b := true; return &b }()})
+	if err != nil {
+		return "", err
+	}
 
 	url := s.client.GetPublicUrl("", result.Key)
 
-    cleanedURL := strings.Replace(url.SignedURL, "public//", "public/", -1)
+	cleanedURL := strings.Replace(url.SignedURL, "public//", "public/", -1)
 
 	return cleanedURL, nil
 }

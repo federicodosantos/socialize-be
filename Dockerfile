@@ -16,9 +16,7 @@ RUN apk --update add ca-certificates curl && rm -rf /var/cache/apk/* && apk add 
 
 WORKDIR /app
 
-EXPOSE 80
-
-EXPOSE 443
+EXPOSE 8060
 
 COPY --from=build /app/main /app/.env ./
 

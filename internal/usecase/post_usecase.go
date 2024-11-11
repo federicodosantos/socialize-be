@@ -62,6 +62,8 @@ func (uc *PostUsecase) GetPostByID(ctx context.Context, postID string) (*model.P
 		return nil, err
 	}
 
+	// get comment by postID
+
 	return convertToPostRespone(post), nil
 }
 
