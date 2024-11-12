@@ -1,5 +1,5 @@
 CREATE TABLE `users` (
-  `id` varchar(255) PRIMARY KEY,
+  `id` int PRIMARY KEY AUTO_INCREMENT,
   `name` varchar(100) NOT NULL,
   `email` varchar(100) UNIQUE NOT NULL,
   `password` varchar(155) NOT NULL,
@@ -9,7 +9,7 @@ CREATE TABLE `users` (
 );
 
 CREATE TABLE `posts` (
-  `id` varchar(255) PRIMARY KEY,
+  `id` int PRIMARY KEY AUTO_INCREMENT,
   `content` text,
   `user_id` varchar(255),
   `image` varchar(255),

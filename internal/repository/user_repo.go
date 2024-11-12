@@ -6,10 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/federicodosantos/socialize/internal/model"
 	customError "github.com/federicodosantos/socialize/pkg/custom-error"
+	"github.com/federicodosantos/socialize/pkg/util"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -31,14 +31,14 @@ func NewUserRepo(db *sqlx.DB) UserRepoItf {
 }
 
 // CreateUser implements UserRepoItf.
-func (u *UserRepo) CreateUser(ctx context.Context,user *model.User) error {
-	createdAtStr := convertTimeToString(user.CreatedAt)
-	updatedAtStr := convertTimeToString(user.UpdatedAt)
+func (r *UserRepo) CreateUser(ctx context.Context, user *model.User) error {
+	createdAtStr := util.ConvertTimeToString(user.CreatedAt)
+	updatedAtStr := util.ConvertTimeToString(user.UpdatedAt)
 
 	insertUserQuery := fmt.Sprintf(`INSERT INTO users(id, name, email, password, created_at, updated_at)
         VALUES('%s', '%s', '%s', '%s', '%s', '%s')`, user.ID, user.Name, user.Email, user.Password, createdAtStr, updatedAtStr)
-	
-	exist, err := u.CheckEmailExist(ctx, user.Email)
+
+	exist, err := r.CheckEmailExist(ctx, user.Email)
 	if err != nil {
 		return err
 	}
@@ -47,7 +47,7 @@ func (u *UserRepo) CreateUser(ctx context.Context,user *model.User) error {
 		return customError.ErrEmailExist
 	}
 
-	res, err := u.db.ExecContext(ctx, insertUserQuery)
+	res, err := r.db.ExecContext(ctx, insertUserQuery)
 	if err != nil {
 		return err
 	}
@@ -57,18 +57,18 @@ func (u *UserRepo) CreateUser(ctx context.Context,user *model.User) error {
 		return customError.ErrRowsAffected
 	}
 
-	errRowsAffected(rows)
+	util.ErrRowsAffected(rows)
 
 	return nil
 }
 
 // GetUserById implements UserRepoItf.
-func (u *UserRepo) GetUserById(ctx context.Context, userId string) (*model.User, error) {
-	query :=  fmt.Sprintf("SELECT * FROM users WHERE id = '%s'", userId)
+func (r *UserRepo) GetUserById(ctx context.Context, userId string) (*model.User, error) {
+	query := fmt.Sprintf("SELECT * FROM users WHERE id = '%s'", userId)
 
 	var user model.User
 
-	err := u.db.QueryRowxContext(ctx, query).StructScan(&user)
+	err := r.db.QueryRowxContext(ctx, query).StructScan(&user)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, customError.ErrUserNotFound
@@ -80,12 +80,12 @@ func (u *UserRepo) GetUserById(ctx context.Context, userId string) (*model.User,
 }
 
 // GetUserByEmail implements UserRepoItf.
-func (u *UserRepo) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
+func (r *UserRepo) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
 	query := fmt.Sprintf("SELECT * FROM users WHERE email = '%s'", email)
-	
+
 	var user model.User
 
-	err := u.db.QueryRowxContext(ctx, query).StructScan(&user)
+	err := r.db.QueryRowxContext(ctx, query).StructScan(&user)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, customError.ErrEmailNotFound
@@ -95,15 +95,16 @@ func (u *UserRepo) GetUserByEmail(ctx context.Context, email string) (*model.Use
 
 	return &user, nil
 }
+
 // UpdateUserData implements UserRepoItf.
-func (u *UserRepo) UpdateUserData(ctx context.Context, user *model.User) error {
-	updatedAtStr := convertTimeToString(user.UpdatedAt)
+func (r *UserRepo) UpdateUserData(ctx context.Context, user *model.User) error {
+	updatedAtStr := util.ConvertTimeToString(user.UpdatedAt)
 
 	query := fmt.Sprintf(`UPDATE users 
 	SET name = '%s', email = '%s', password = '%s', updated_at = '%s'
 	WHERE id = '%s'`, user.Name, user.Email, user.Password, updatedAtStr, user.ID)
 
-	tx, err := u.db.Beginx()
+	tx, err := r.db.Beginx()
 	if err != nil {
 		return err
 	}
@@ -127,7 +128,7 @@ func (u *UserRepo) UpdateUserData(ctx context.Context, user *model.User) error {
 		return err
 	}
 
-	errRowsAffected(rows)
+	util.ErrRowsAffected(rows)
 
 	err = tx.Commit()
 	if err != nil {
@@ -139,7 +140,7 @@ func (u *UserRepo) UpdateUserData(ctx context.Context, user *model.User) error {
 
 // UpdateUserData implements UserRepoItf.
 func (u *UserRepo) UpdateUserPhoto(ctx context.Context, user *model.User) error {
-	updatedAtStr := convertTimeToString(user.UpdatedAt)
+	updatedAtStr := util.ConvertTimeToString(user.UpdatedAt)
 
 	query := fmt.Sprintf(`UPDATE users 
 	SET photo = '%s', updated_at = '%s'
@@ -169,7 +170,7 @@ func (u *UserRepo) UpdateUserPhoto(ctx context.Context, user *model.User) error 
 		return err
 	}
 
-	errRowsAffected(rows)
+	util.ErrRowsAffected(rows)
 
 	err = tx.Commit()
 	if err != nil {
@@ -191,16 +192,4 @@ func (u *UserRepo) CheckEmailExist(ctx context.Context, email string) (bool, err
 	}
 
 	return count > 0, nil
-}
-
-func errRowsAffected(rows int64) error {
-	if rows != 1 {
-		return fmt.Errorf("error : %w, got %d rows affected",customError.ErrRowsAffected, rows)
-	}
-
-	return nil
-}
-
-func convertTimeToString(time time.Time) string {
-	return time.Format("2006-01-02 15:04:05")
 }

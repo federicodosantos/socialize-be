@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/federicodosantos/socialize/internal/delivery"
+	"github.com/federicodosantos/socialize/internal/delivery/http"
 	"github.com/federicodosantos/socialize/internal/middleware"
 	"github.com/federicodosantos/socialize/internal/repository"
 	"github.com/federicodosantos/socialize/internal/usecase"
@@ -18,13 +18,13 @@ import (
 )
 
 type Bootstrap struct {
-	db *sqlx.DB
+	db     *sqlx.DB
 	router *chi.Mux
 }
 
 func NewBootstrap(db *sqlx.DB, router *chi.Mux) *Bootstrap {
 	return &Bootstrap{
-		db: db,
+		db:     db,
 		router: router,
 	}
 }
@@ -37,11 +37,11 @@ func (b *Bootstrap) InitApp() {
 	}
 
 	// initialize supabase
-	client := supabaseStorage.NewClient(os.Getenv("SUPABASE_URL"), os.Getenv("SUPABASE_KEY"), 
+	client := supabaseStorage.NewClient(os.Getenv("SUPABASE_URL"), os.Getenv("SUPABASE_KEY"),
 		map[string]string{
 			"apikey": os.Getenv("SUPABASE_KEY"),
 		})
-	
+
 	supabase := supabase.NewSupabaseStorage(client)
 
 	// initialize middleware
@@ -51,19 +51,19 @@ func (b *Bootstrap) InitApp() {
 	userRepo := repository.NewUserRepo(b.db)
 
 	// initialize usecase
-	userUsecase := usecase.NewUserUC(userRepo, jwtService, supabase)
+	userUsecase := usecase.NewUserUsecase(userRepo, jwtService, supabase)
 
 	// init handler
-	userHandler := delivery.NewUserHandler(userUsecase)
+	userHandler := http.NewUserHandler(userUsecase)
 
 	b.router.Use(cors.Handler(cors.Options{
-		AllowedOrigins: []string{"https://*", "http://*"},
-		AllowedMethods: []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
-		AllowedHeaders: []string{"*"},
+		AllowedOrigins:   []string{"https://*", "http://*"},
+		AllowedMethods:   []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"*"},
 		AllowCredentials: true,
-		MaxAge: 300,
+		MaxAge:           300,
 	}))
 
 	// init routes
-	delivery.UserRoutes(b.router, userHandler, middleware)
+	http.UserRoutes(b.router, userHandler, middleware)
 }

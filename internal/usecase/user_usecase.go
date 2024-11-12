@@ -18,7 +18,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type UserUCItf interface {
+type UserUsecaseItf interface {
 	Register(ctx context.Context, req *model.UserRegister) (*model.UserResponse, error)
 	Login(ctx context.Context, req *model.UserLogin) (string, error)
 	GetUserById(ctx context.Context, userId string) (*model.UserResponse, error)
@@ -26,22 +26,22 @@ type UserUCItf interface {
 	UpdateUserPhoto(ctx context.Context, req *model.UserUpdatePhoto, userId string) (*model.UserResponse, error)
 }
 
-type UserUC struct {
-	userRepo              repository.UserRepoItf
-	supabase supabase.SupabaseStorageItf 
-	jwt                   jwt.JWTItf
+type UserUsecase struct {
+	userRepo repository.UserRepoItf
+	supabase supabase.SupabaseStorageItf
+	jwt      jwt.JWTItf
 }
 
-func NewUserUC(userRepo repository.UserRepoItf,
-	jwt jwt.JWTItf,supabase supabase.SupabaseStorageItf) UserUCItf {
-	return &UserUC{
-		userRepo:              userRepo,
-		jwt:                   jwt,
-		supabase: 			   supabase,}
+func NewUserUsecase(userRepo repository.UserRepoItf,
+	jwt jwt.JWTItf, supabase supabase.SupabaseStorageItf) UserUsecaseItf {
+	return &UserUsecase{
+		userRepo: userRepo,
+		jwt:      jwt,
+		supabase: supabase}
 }
 
 // Register implements UserUCItf.
-func (u *UserUC) Register(ctx context.Context, req *model.UserRegister) (*model.UserResponse, error) {
+func (u *UserUsecase) Register(ctx context.Context, req *model.UserRegister) (*model.UserResponse, error) {
 	hashedPassword := md5.HashWithMd5(req.Password)
 
 	log.Printf("pass : %s", hashedPassword)
@@ -63,12 +63,12 @@ func (u *UserUC) Register(ctx context.Context, req *model.UserRegister) (*model.
 
 		return nil, err
 	}
-	
+
 	return convertToUserRespone(createdUser), nil
 }
 
 // Login implements UserUCItf.
-func (u *UserUC) Login(ctx context.Context, req *model.UserLogin) (string, error) {
+func (u *UserUsecase) Login(ctx context.Context, req *model.UserLogin) (string, error) {
 	user, err := u.userRepo.GetUserByEmail(ctx, req.Email)
 	if err != nil {
 		return "", err
@@ -89,7 +89,7 @@ func (u *UserUC) Login(ctx context.Context, req *model.UserLogin) (string, error
 }
 
 // GetUserById implements UserUCItf.
-func (u *UserUC) GetUserById(ctx context.Context, userId string) (*model.UserResponse, error) {
+func (u *UserUsecase) GetUserById(ctx context.Context, userId string) (*model.UserResponse, error) {
 	user, err := u.userRepo.GetUserById(ctx, userId)
 	if err != nil {
 		return nil, err
@@ -99,7 +99,7 @@ func (u *UserUC) GetUserById(ctx context.Context, userId string) (*model.UserRes
 }
 
 // UpdateUser implements UserUCItf.
-func (u *UserUC) UpdateUserData(ctx context.Context, req *model.UserUpdateData, userId string) (*model.UserResponse, error) {
+func (u *UserUsecase) UpdateUserData(ctx context.Context, req *model.UserUpdateData, userId string) (*model.UserResponse, error) {
 	user, err := u.userRepo.GetUserById(ctx, userId)
 	if err != nil {
 		return nil, err
@@ -129,7 +129,7 @@ func (u *UserUC) UpdateUserData(ctx context.Context, req *model.UserUpdateData, 
 	return convertToUserRespone(user), nil
 }
 
-func (u *UserUC) UpdateUserPhoto(ctx context.Context, req *model.UserUpdatePhoto, userId string) (*model.UserResponse, error) {
+func (u *UserUsecase) UpdateUserPhoto(ctx context.Context, req *model.UserUpdatePhoto, userId string) (*model.UserResponse, error) {
 	user, err := u.userRepo.GetUserById(ctx, userId)
 	if err != nil {
 		return nil, err
@@ -137,13 +137,13 @@ func (u *UserUC) UpdateUserPhoto(ctx context.Context, req *model.UserUpdatePhoto
 
 	if req.Photo != nil {
 
-		photoLink, err :=  u.supabase.Upload(os.Getenv("SUPABASE_BUCKET_USER"), req.Photo)
+		photoLink, err := u.supabase.Upload(os.Getenv("SUPABASE_BUCKET_USER"), req.Photo)
 		if err != nil {
 			return nil, err
 		}
 		user.Photo = sql.NullString{
 			String: photoLink,
-			Valid: true,
+			Valid:  true,
 		}
 	}
 
@@ -155,7 +155,6 @@ func (u *UserUC) UpdateUserPhoto(ctx context.Context, req *model.UserUpdatePhoto
 	}
 
 	return convertToUserRespone(user), nil
-
 }
 
 func convertToUserRespone(user *model.User) *model.UserResponse {
@@ -163,9 +162,8 @@ func convertToUserRespone(user *model.User) *model.UserResponse {
 		ID:        user.ID,
 		Name:      user.Name,
 		Email:     user.Email,
-		Photo: user.Photo,
+		Photo:     user.Photo,
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
 	}
 }
-

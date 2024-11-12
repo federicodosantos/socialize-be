@@ -1,4 +1,4 @@
-package delivery
+package http
 
 import (
 	"encoding/json"
@@ -6,21 +6,37 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/federicodosantos/socialize/internal/middleware"
 	"github.com/federicodosantos/socialize/internal/model"
 	"github.com/federicodosantos/socialize/internal/usecase"
 	customContext "github.com/federicodosantos/socialize/pkg/context"
 	customError "github.com/federicodosantos/socialize/pkg/custom-error"
 	response "github.com/federicodosantos/socialize/pkg/response"
+	"github.com/go-chi/chi/v5"
 )
 
 const maxUploadSize = 2 * 1024 * 1024
 
 type UserHandler struct {
-	userUC usecase.UserUCItf
+	userUC usecase.UserUsecaseItf
 }
 
-func NewUserHandler(userUC usecase.UserUCItf) *UserHandler {
+func NewUserHandler(userUC usecase.UserUsecaseItf) *UserHandler {
 	return &UserHandler{userUC: userUC}
+}
+
+func UserRoutes(router *chi.Mux, userHandle *UserHandler, middleware middleware.MiddlewareItf) {
+	// public routes
+	router.Post("/auth/register", userHandle.Register)
+	router.Post("/auth/login", userHandle.Login)
+
+	// private routes
+	router.Group(func(r chi.Router) {
+		r.Use(middleware.JwtAuthMiddleware)
+		r.Get("/auth/current-user", userHandle.GetCurrentUser)
+		r.Patch("/auth/update-photo", userHandle.UpdateUserPhoto)
+		r.Patch("/auth/update-data", userHandle.UpdateUserData)
+	})
 }
 
 func (uh *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
@@ -30,7 +46,7 @@ func (uh *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 		response.FailedResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	
+
 	reqCtx := r.Context()
 
 	user, err := uh.userUC.Register(reqCtx, req)
@@ -73,10 +89,10 @@ func (uh *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.SetCookie(w, &http.Cookie{
-		Name: "jwt-token",
-		Value: token,
+		Name:    "jwt-token",
+		Value:   token,
 		Expires: time.Now().Add(24 * time.Hour),
-		Path: "/",
+		Path:    "/",
 	})
 
 	response.SuccessResponse(w, http.StatusOK, "successfully login to account", nil)
@@ -113,11 +129,11 @@ func (uh *UserHandler) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 func (uh *UserHandler) UpdateUserPhoto(w http.ResponseWriter, r *http.Request) {
 	var req model.UserUpdatePhoto
 
-	if err :=r.ParseMultipartForm(maxUploadSize); err != nil {
+	if err := r.ParseMultipartForm(maxUploadSize); err != nil {
 		response.FailedResponse(w, http.StatusBadRequest, "File is too big. 2MB maximum.")
 		return
 	}
-	
+
 	file, header, err := r.FormFile("photo")
 	if err != nil {
 		response.FailedResponse(w, http.StatusBadRequest, "Failed to get file.")
@@ -149,7 +165,7 @@ func (uh *UserHandler) UpdateUserPhoto(w http.ResponseWriter, r *http.Request) {
 	updatedUser, err := uh.userUC.UpdateUserPhoto(reqCtx, &req, stringUserID)
 	if err != nil {
 		response.FailedResponse(w, http.StatusInternalServerError, err.Error())
-		return 
+		return
 	}
 
 	response.SuccessResponse(w, http.StatusOK, "Successfully update user data", updatedUser)
@@ -161,7 +177,7 @@ func (uh *UserHandler) UpdateUserData(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.FailedResponse(w, http.StatusBadRequest, err.Error())
 		return
-	}	
+	}
 
 	userID := r.Context().Value(customContext.UserIDKey)
 	if userID == "" {
@@ -180,7 +196,7 @@ func (uh *UserHandler) UpdateUserData(w http.ResponseWriter, r *http.Request) {
 	updatedUser, err := uh.userUC.UpdateUserData(reqCtx, req, stringUserID)
 	if err != nil {
 		response.FailedResponse(w, http.StatusInternalServerError, err.Error())
-		return 
+		return
 	}
 
 	response.SuccessResponse(w, http.StatusOK, "Successfully update user Data", updatedUser)
