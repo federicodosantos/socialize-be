@@ -7,7 +7,7 @@ import (
 )
 
 type User struct {
-	ID        string         `db:"id"`
+	ID        int         `db:"id"`
 	Name      string         `db:"name"`
 	Email     string         `db:"email"`
 	Password  string         `db:"password"`
@@ -40,7 +40,7 @@ type UserUpdatePhoto struct {
 }
 
 type UserResponse struct {
-	ID        string         `json:"id"`
+	ID        int         `json:"id"`
 	Name      string         `json:"name"`
 	Email     string         `json:"email"`
 	Photo     sql.NullString `json:"photo"`

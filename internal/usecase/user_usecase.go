@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"time"
 
@@ -15,7 +14,6 @@ import (
 	"github.com/federicodosantos/socialize/pkg/jwt"
 	"github.com/federicodosantos/socialize/pkg/md5"
 	"github.com/federicodosantos/socialize/pkg/supabase"
-	"github.com/google/uuid"
 )
 
 type UserUsecaseItf interface {
@@ -44,10 +42,7 @@ func NewUserUsecase(userRepo repository.UserRepoItf,
 func (u *UserUsecase) Register(ctx context.Context, req *model.UserRegister) (*model.UserResponse, error) {
 	hashedPassword := md5.HashWithMd5(req.Password)
 
-	log.Printf("pass : %s", hashedPassword)
-
 	createdUser := &model.User{
-		ID:        uuid.NewString(),
 		Name:      req.Name,
 		Email:     req.Email,
 		Password:  hashedPassword,

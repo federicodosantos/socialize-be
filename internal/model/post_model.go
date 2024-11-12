@@ -6,7 +6,7 @@ import (
 )
 
 type Post struct {
-	ID        string         `db:"id"`
+	ID        int         `db:"id"`
 	Title     string         `db:"title"`
 	Content   string         `db:"content"`
 	UserID    string         `db:"user_id"`
@@ -22,7 +22,7 @@ type PostCreate struct {
 }
 
 type PostResponse struct {
-	ID        string    `json:"id"`
+	ID        int    	`json:"id"`
 	Title     string    `json:"title"`
 	Content   string    `json:"content"`
 	UserID    string    `json:"user_id"`
