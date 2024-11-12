@@ -14,6 +14,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 	"github.com/jmoiron/sqlx"
+	"go.uber.org/zap"
 
 	supabaseStorage "github.com/supabase-community/storage-go"
 )
@@ -21,12 +22,14 @@ import (
 type Bootstrap struct {
 	db     *sqlx.DB
 	router *chi.Mux
+	logger *zap.SugaredLogger
 }
 
-func NewBootstrap(db *sqlx.DB, router *chi.Mux) *Bootstrap {
+func NewBootstrap(db *sqlx.DB, router *chi.Mux, logger *zap.SugaredLogger) *Bootstrap {
 	return &Bootstrap{
 		db:     db,
 		router: router,
+		logger: logger,
 	}
 }
 
@@ -45,9 +48,6 @@ func (b *Bootstrap) InitApp() {
 
 	supabase := supabase.NewSupabaseStorage(client)
 
-	// initialize middleware
-	middleware := middleware.NewMiddleware(jwtService)
-
 	// initialize repository
 	userRepo := repository.NewUserRepo(b.db)
 
@@ -59,6 +59,11 @@ func (b *Bootstrap) InitApp() {
 	fileHandler := httpHandler.NewFileHandler(fileUsecase)
 	userHandler := httpHandler.NewUserHandler(userUsecase)
 
+	// initialize middleware
+	middleware := middleware.NewMiddleware(jwtService, b.logger)
+
+	b.router.Use(middleware.LoggingMiddleware)
+
 	b.router.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"https://*", "http://*"},
 		AllowedMethods:   []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
@@ -66,6 +71,7 @@ func (b *Bootstrap) InitApp() {
 		AllowCredentials: true,
 		MaxAge:           300,
 	}))
+
 
 	// init routes
 	httpHandler.FileRoutes(b.router, fileHandler, middleware)

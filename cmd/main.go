@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -15,14 +14,19 @@ import (
 	"github.com/federicodosantos/socialize/pkg/database/mysql"
 	"github.com/go-chi/chi/v5"
 	"github.com/joho/godotenv"
+	"go.uber.org/zap"
 )
 
 type operation func(context.Context) error
 
 func main() {
+	logger := zap.Must(zap.NewProduction())
+	defer logger.Sync()
+	sugar := logger.Sugar()
+
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatalf("cannot load env file due to %s", err)
+		sugar.Fatalf("cannot load env file: %v", err)
 	}
 
 	db := mysql.DBInit()
@@ -30,8 +34,7 @@ func main() {
 
 	router := chi.NewRouter()
 
-	bootstrap := app.NewBootstrap(db, router)
-
+	bootstrap := app.NewBootstrap(db, router, sugar)
 	bootstrap.InitApp()
 
 	server := &http.Server{
@@ -40,13 +43,13 @@ func main() {
 	}
 
 	go func() {
-		log.Printf("server is running on port %s", os.Getenv("APP_PORT"))
+		sugar.Infof("server is running on port %s", os.Getenv("APP_PORT"))
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("cannot serve the server due to %s", err)
+			sugar.Fatalf("server failed to start: %v", err)
 		}
 	}()
 
-	wait := gracefullyShutdown(context.Background(), 5*time.Second, map[string]operation{
+	wait := gracefullyShutdown(context.Background(), 5*time.Second, sugar, map[string]operation{
 		"http-server": func(ctx context.Context) error {
 			return server.Shutdown(ctx)
 		},
@@ -56,51 +59,45 @@ func main() {
 	})
 
 	<-wait
+	sugar.Info("application stopped gracefully")
 }
 
-func gracefullyShutdown(ctx context.Context, timeout time.Duration, ops map[string]operation) <-chan struct{} {
+func gracefullyShutdown(ctx context.Context, timeout time.Duration, sugar *zap.SugaredLogger, ops map[string]operation) <-chan struct{} {
 	wait := make(chan struct{})
 	go func() {
-
 		c := make(chan os.Signal, 1)
-
 		signal.Notify(c, os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 
-		// block until receive signal
+		// Blok sampai menerima sinyal
 		<-c
+		sugar.Info("shutting down application")
 
-		log.Println("shutting down")
-
-		// set timeout for the operation to be done to prevent system hang
+		// Timeout untuk proses shutdown
 		timeoutFunc := time.AfterFunc(timeout, func() {
-			log.Printf("timeout %d ms has been elapsed, force exit", timeout)
-			os.Exit(0)
+			sugar.Warnf("timeout reached (%v), forcing exit", timeout)
+			os.Exit(1)
 		})
-
 		defer timeoutFunc.Stop()
 
 		var wg sync.WaitGroup
 
-		// Do the operations async to save time
+		// Proses shutdown asinkron
 		for key, op := range ops {
 			wg.Add(1)
 			innerOp := op
 			innerKey := key
 			go func() {
 				defer wg.Done()
-
-				log.Printf("cleaning up: %s", innerKey)
+				sugar.Infof("cleaning up: %s", innerKey)
 				if err := innerOp(ctx); err != nil {
-					log.Printf("%s: clean up failed: %s", innerKey, err.Error())
+					sugar.Errorf("%s cleanup failed: %v", innerKey, err)
 					return
 				}
-
-				log.Printf("%s was shutdown gracefully", innerKey)
+				sugar.Infof("%s shut down gracefully", innerKey)
 			}()
 		}
 
 		wg.Wait()
-
 		close(wait)
 	}()
 
