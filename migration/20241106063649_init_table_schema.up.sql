@@ -11,7 +11,7 @@ CREATE TABLE `users` (
 CREATE TABLE `posts` (
   `id` int PRIMARY KEY AUTO_INCREMENT,
   `content` text,
-  `user_id` varchar(255),
+  `user_id` int,
   `image` varchar(255),
   `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp DEFAULT CURRENT_TIMESTAMP
@@ -19,16 +19,16 @@ CREATE TABLE `posts` (
 
 CREATE TABLE `comments` (
   `id` int PRIMARY KEY AUTO_INCREMENT,
-  `user_id` varchar(255),
-  `post_id` varchar(255),
+  `user_id` int,
+  `post_id` int,
   `comment` varchar(255) NOT NULL,
   `created_at` timestamp DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE `votes` (
   `id` int PRIMARY KEY AUTO_INCREMENT,
-  `user_id` varchar(255) UNIQUE,
-  `post_id` varchar(255) UNIQUE,
+  `user_id` int UNIQUE,
+  `post_id` int UNIQUE,
   `vote` tinyint NOT NULL,
   `created_at` timestamp DEFAULT CURRENT_TIMESTAMP
 );
