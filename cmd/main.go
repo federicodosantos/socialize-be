@@ -17,7 +17,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-type operation func (context.Context) error
+type operation func(context.Context) error
 
 func main() {
 	err := godotenv.Load()
@@ -27,25 +27,26 @@ func main() {
 
 	db := mysql.DBInit()
 	defer db.Close()
-	
+
 	router := chi.NewRouter()
-	
+
 	bootstrap := app.NewBootstrap(db, router)
 
 	bootstrap.InitApp()
 
 	server := &http.Server{
-		Addr: fmt.Sprintf(":%s", os.Getenv("APP_PORT")),
+		Addr:    fmt.Sprintf(":%s", os.Getenv("APP_PORT")),
 		Handler: router,
 	}
 
 	go func() {
+		log.Printf("server is running on port %s", os.Getenv("APP_PORT"))
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("cannot serve the server due to %s", err)
 		}
 	}()
 
-	wait := gracefullyShutdown(context.Background(), 5 * time.Second, map[string]operation{
+	wait := gracefullyShutdown(context.Background(), 5*time.Second, map[string]operation{
 		"http-server": func(ctx context.Context) error {
 			return server.Shutdown(ctx)
 		},
@@ -59,49 +60,49 @@ func main() {
 
 func gracefullyShutdown(ctx context.Context, timeout time.Duration, ops map[string]operation) <-chan struct{} {
 	wait := make(chan struct{})
-	go func ()  {
-		
-	c := make(chan os.Signal, 1)
+	go func() {
 
-	signal.Notify(c, os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+		c := make(chan os.Signal, 1)
 
-	// block until receive signal
-	<- c
+		signal.Notify(c, os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 
-	log.Println("shutting down")
+		// block until receive signal
+		<-c
 
-	// set timeout for the operation to be done to prevent system hang
-	timeoutFunc := time.AfterFunc(timeout, func() {
-		log.Printf("timeout %d ms has been elapsed, force exit", timeout)
-		os.Exit(0)
-	})
+		log.Println("shutting down")
 
-	defer timeoutFunc.Stop()
+		// set timeout for the operation to be done to prevent system hang
+		timeoutFunc := time.AfterFunc(timeout, func() {
+			log.Printf("timeout %d ms has been elapsed, force exit", timeout)
+			os.Exit(0)
+		})
 
-	var wg sync.WaitGroup
+		defer timeoutFunc.Stop()
 
-	// Do the operations async to save time
-	for key, op := range ops {
-		wg.Add(1)
-		innerOp := op
-		innerKey := key
-		go func ()  {
-			defer wg.Done()
+		var wg sync.WaitGroup
 
-			log.Printf("cleaning up: %s", innerKey)
-			if err := innerOp(ctx); err != nil {
-				log.Printf("%s: clean up failed: %s", innerKey, err.Error())
-				return
-			}
+		// Do the operations async to save time
+		for key, op := range ops {
+			wg.Add(1)
+			innerOp := op
+			innerKey := key
+			go func() {
+				defer wg.Done()
 
-			log.Printf("%s was shutdown gracefully", innerKey)
-		}()
-	}
+				log.Printf("cleaning up: %s", innerKey)
+				if err := innerOp(ctx); err != nil {
+					log.Printf("%s: clean up failed: %s", innerKey, err.Error())
+					return
+				}
 
-	wg.Wait()
+				log.Printf("%s was shutdown gracefully", innerKey)
+			}()
+		}
 
-	close(wait)
-}()
+		wg.Wait()
+
+		close(wait)
+	}()
 
 	return wait
 }
