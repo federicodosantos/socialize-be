@@ -105,7 +105,7 @@ func (uh *UserHandler) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	stringUserID, ok := userID.(string)
+	intUserID, ok := userID.(int)
 	if !ok {
 		response.FailedResponse(w, http.StatusBadRequest, "invalid or missing userID in context")
 		return
@@ -113,7 +113,7 @@ func (uh *UserHandler) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 
 	reqCtx := r.Context()
 
-	user, err := uh.userUC.GetUserById(reqCtx, stringUserID)
+	user, err := uh.userUC.GetUserById(reqCtx, intUserID)
 	if err != nil {
 		if errors.Is(err, customError.ErrUserNotFound) {
 			response.FailedResponse(w, http.StatusNotFound, err.Error())
@@ -154,7 +154,7 @@ func (uh *UserHandler) UpdateUserPhoto(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	stringUserID, ok := userID.(string)
+	intUserID, ok := userID.(int)
 	if !ok {
 		response.FailedResponse(w, http.StatusBadRequest, "invalid or missing userID in context")
 		return
@@ -162,7 +162,7 @@ func (uh *UserHandler) UpdateUserPhoto(w http.ResponseWriter, r *http.Request) {
 
 	reqCtx := r.Context()
 
-	updatedUser, err := uh.userUC.UpdateUserPhoto(reqCtx, &req, stringUserID)
+	updatedUser, err := uh.userUC.UpdateUserPhoto(reqCtx, &req, intUserID)
 	if err != nil {
 		response.FailedResponse(w, http.StatusInternalServerError, err.Error())
 		return
@@ -185,7 +185,7 @@ func (uh *UserHandler) UpdateUserData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	stringUserID, ok := userID.(string)
+	intUserID, ok := userID.(int)
 	if !ok {
 		response.FailedResponse(w, http.StatusBadRequest, "invalid or missing userID in context")
 		return
@@ -193,7 +193,7 @@ func (uh *UserHandler) UpdateUserData(w http.ResponseWriter, r *http.Request) {
 
 	reqCtx := r.Context()
 
-	updatedUser, err := uh.userUC.UpdateUserData(reqCtx, req, stringUserID)
+	updatedUser, err := uh.userUC.UpdateUserData(reqCtx, req, intUserID)
 	if err != nil {
 		response.FailedResponse(w, http.StatusInternalServerError, err.Error())
 		return

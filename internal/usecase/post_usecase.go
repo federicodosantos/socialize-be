@@ -56,7 +56,7 @@ func convertToPostRespone(post *model.Post) *model.PostResponse {
 	}
 }
 
-func (uc *PostUsecase) GetPostByID(ctx context.Context, postID string) (*model.PostResponse, error) {
+func (uc *PostUsecase) GetPostByID(ctx context.Context, postID int) (*model.PostResponse, error) {
 	post, err := uc.postRepo.GetPostByID(ctx, postID)
 	if err != nil {
 		return nil, err
@@ -67,6 +67,6 @@ func (uc *PostUsecase) GetPostByID(ctx context.Context, postID string) (*model.P
 	return convertToPostRespone(post), nil
 }
 
-func (uc *PostUsecase) DeletePost(ctx context.Context, postID string) error {
+func (uc *PostUsecase) DeletePost(ctx context.Context, postID int) error {
 	return uc.postRepo.DeletePost(ctx, postID)
 }

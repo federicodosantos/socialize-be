@@ -57,7 +57,7 @@ func (b *Bootstrap) InitApp() {
 	userHandler := http.NewUserHandler(userUsecase)
 
 	b.router.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:5173"},
+		AllowedOrigins:   []string{"https://*", "http://*"},
 		AllowedMethods:   []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"*"},
 		AllowCredentials: true,

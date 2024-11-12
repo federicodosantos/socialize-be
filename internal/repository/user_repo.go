@@ -16,7 +16,7 @@ import (
 type UserRepoItf interface {
 	CreateUser(ctx context.Context, user *model.User) error
 	GetUserByEmail(ctx context.Context, email string) (*model.User, error)
-	GetUserById(ctx context.Context, userId string) (*model.User, error)
+	GetUserById(ctx context.Context, userId int) (*model.User, error)
 	CheckEmailExist(ctx context.Context, email string) (bool, error)
 	UpdateUserData(ctx context.Context, user *model.User) error
 	UpdateUserPhoto(ctx context.Context, user *model.User) error
@@ -36,7 +36,7 @@ func (r *UserRepo) CreateUser(ctx context.Context, user *model.User) error {
 	updatedAtStr := util.ConvertTimeToString(user.UpdatedAt)
 
 	insertUserQuery := fmt.Sprintf(`INSERT INTO users(id, name, email, password, created_at, updated_at)
-        VALUES('%s', '%s', '%s', '%s', '%s', '%s')`, user.ID, user.Name, user.Email, user.Password, createdAtStr, updatedAtStr)
+        VALUES(%d, '%s', '%s', '%s', '%s', '%s')`, user.ID, user.Name, user.Email, user.Password, createdAtStr, updatedAtStr)
 
 	exist, err := r.CheckEmailExist(ctx, user.Email)
 	if err != nil {
@@ -63,8 +63,8 @@ func (r *UserRepo) CreateUser(ctx context.Context, user *model.User) error {
 }
 
 // GetUserById implements UserRepoItf.
-func (r *UserRepo) GetUserById(ctx context.Context, userId string) (*model.User, error) {
-	query := fmt.Sprintf("SELECT * FROM users WHERE id = '%s'", userId)
+func (r *UserRepo) GetUserById(ctx context.Context, userId int) (*model.User, error) {
+	query := fmt.Sprintf("SELECT * FROM users WHERE id = %d", userId)
 
 	var user model.User
 
@@ -102,7 +102,7 @@ func (r *UserRepo) UpdateUserData(ctx context.Context, user *model.User) error {
 
 	query := fmt.Sprintf(`UPDATE users 
 	SET name = '%s', email = '%s', password = '%s', updated_at = '%s'
-	WHERE id = '%s'`, user.Name, user.Email, user.Password, updatedAtStr, user.ID)
+	WHERE id = %d'`, user.Name, user.Email, user.Password, updatedAtStr, user.ID)
 
 	tx, err := r.db.Beginx()
 	if err != nil {
@@ -144,7 +144,7 @@ func (u *UserRepo) UpdateUserPhoto(ctx context.Context, user *model.User) error 
 
 	query := fmt.Sprintf(`UPDATE users 
 	SET photo = '%s', updated_at = '%s'
-	WHERE id = '%s'`, user.Photo.String, updatedAtStr, user.ID)
+	WHERE id = %d`, user.Photo.String, updatedAtStr, user.ID)
 
 	tx, err := u.db.Beginx()
 	if err != nil {

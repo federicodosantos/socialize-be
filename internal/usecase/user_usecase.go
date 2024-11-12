@@ -19,9 +19,9 @@ import (
 type UserUsecaseItf interface {
 	Register(ctx context.Context, req *model.UserRegister) (*model.UserResponse, error)
 	Login(ctx context.Context, req *model.UserLogin) (string, error)
-	GetUserById(ctx context.Context, userId string) (*model.UserResponse, error)
-	UpdateUserData(ctx context.Context, req *model.UserUpdateData, userId string) (*model.UserResponse, error)
-	UpdateUserPhoto(ctx context.Context, req *model.UserUpdatePhoto, userId string) (*model.UserResponse, error)
+	GetUserById(ctx context.Context, userId int) (*model.UserResponse, error)
+	UpdateUserData(ctx context.Context, req *model.UserUpdateData, userId int) (*model.UserResponse, error)
+	UpdateUserPhoto(ctx context.Context, req *model.UserUpdatePhoto, userId int) (*model.UserResponse, error)
 }
 
 type UserUsecase struct {
@@ -84,7 +84,7 @@ func (u *UserUsecase) Login(ctx context.Context, req *model.UserLogin) (string, 
 }
 
 // GetUserById implements UserUCItf.
-func (u *UserUsecase) GetUserById(ctx context.Context, userId string) (*model.UserResponse, error) {
+func (u *UserUsecase) GetUserById(ctx context.Context, userId int) (*model.UserResponse, error) {
 	user, err := u.userRepo.GetUserById(ctx, userId)
 	if err != nil {
 		return nil, err
@@ -94,7 +94,7 @@ func (u *UserUsecase) GetUserById(ctx context.Context, userId string) (*model.Us
 }
 
 // UpdateUser implements UserUCItf.
-func (u *UserUsecase) UpdateUserData(ctx context.Context, req *model.UserUpdateData, userId string) (*model.UserResponse, error) {
+func (u *UserUsecase) UpdateUserData(ctx context.Context, req *model.UserUpdateData, userId int) (*model.UserResponse, error) {
 	user, err := u.userRepo.GetUserById(ctx, userId)
 	if err != nil {
 		return nil, err
@@ -124,7 +124,7 @@ func (u *UserUsecase) UpdateUserData(ctx context.Context, req *model.UserUpdateD
 	return convertToUserRespone(user), nil
 }
 
-func (u *UserUsecase) UpdateUserPhoto(ctx context.Context, req *model.UserUpdatePhoto, userId string) (*model.UserResponse, error) {
+func (u *UserUsecase) UpdateUserPhoto(ctx context.Context, req *model.UserUpdatePhoto, userId int) (*model.UserResponse, error) {
 	user, err := u.userRepo.GetUserById(ctx, userId)
 	if err != nil {
 		return nil, err
