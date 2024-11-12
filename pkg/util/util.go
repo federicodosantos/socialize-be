@@ -1,10 +1,16 @@
 package util
 
 import (
+	"errors"
 	"fmt"
+	"net/http"
 	"time"
 
+	customContext "github.com/federicodosantos/socialize/pkg/context"
 	customError "github.com/federicodosantos/socialize/pkg/custom-error"
+	response "github.com/federicodosantos/socialize/pkg/response"
+	"github.com/go-chi/chi/v5"
+	"github.com/jmoiron/sqlx"
 )
 
 func ErrRowsAffected(rows int64) error {
@@ -17,4 +23,46 @@ func ErrRowsAffected(rows int64) error {
 
 func ConvertTimeToString(time time.Time) string {
 	return time.Format("2006-01-02 15:04:05")
+}
+
+func GetUserIdFromContext(w http.ResponseWriter, r *http.Request) (int, error) {
+	userID := r.Context().Value(customContext.UserIDKey)
+	if userID == "" {
+		response.FailedResponse(w, http.StatusUnauthorized, "User ID tidak ditemukan dalam konteks")
+		return 0, errors.New("user id not found in context")
+	}
+
+	intUserID, ok := userID.(int)
+	if !ok {
+		response.FailedResponse(w, http.StatusBadRequest, "User ID tidak valid dalam konteks")
+		return 0, errors.New("invalid or missing userID in context")
+	}
+
+	return intUserID, nil
+}
+
+func HealthCheck(router *chi.Mux, db *sqlx.DB) {
+	type HealthStatus struct {
+		Status      string `json:"status"`
+    	Database    string `json:"database"`
+	}
+
+	router.Get("/health-check", func (w http.ResponseWriter, r *http.Request)  {
+		status := HealthStatus{
+			Status: "healthy",
+			Database: "healthy",
+		}
+
+		if err := db.Ping(); err != nil {
+			status.Status = "unhealthy"
+			status.Database = "unhealthy"
+		}
+
+		httpStatus := http.StatusOK
+		if status.Status != "healthy" {
+			httpStatus = http.StatusServiceUnavailable
+		}
+
+		response.SuccessResponse(w, httpStatus, "health check", status)
+	})
 }

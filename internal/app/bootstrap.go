@@ -4,12 +4,13 @@ import (
 	"log"
 	"os"
 
-	"github.com/federicodosantos/socialize/internal/delivery/http"
+	httpHandler "github.com/federicodosantos/socialize/internal/delivery/http"
 	"github.com/federicodosantos/socialize/internal/middleware"
 	"github.com/federicodosantos/socialize/internal/repository"
 	"github.com/federicodosantos/socialize/internal/usecase"
 	"github.com/federicodosantos/socialize/pkg/jwt"
 	"github.com/federicodosantos/socialize/pkg/supabase"
+	"github.com/federicodosantos/socialize/pkg/util"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 	"github.com/jmoiron/sqlx"
@@ -51,10 +52,12 @@ func (b *Bootstrap) InitApp() {
 	userRepo := repository.NewUserRepo(b.db)
 
 	// initialize usecase
-	userUsecase := usecase.NewUserUsecase(userRepo, jwtService, supabase)
+	fileUsecase := usecase.NewFileUsecase(supabase)
+	userUsecase := usecase.NewUserUsecase(userRepo, jwtService)
 
 	// init handler
-	userHandler := http.NewUserHandler(userUsecase)
+	fileHandler := httpHandler.NewFileHandler(fileUsecase)
+	userHandler := httpHandler.NewUserHandler(userUsecase)
 
 	b.router.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"https://*", "http://*"},
@@ -65,5 +68,9 @@ func (b *Bootstrap) InitApp() {
 	}))
 
 	// init routes
-	http.UserRoutes(b.router, userHandler, middleware)
+	httpHandler.FileRoutes(b.router, fileHandler, middleware)
+	httpHandler.UserRoutes(b.router, userHandler, middleware)
+
+	//health checl
+	util.HealthCheck(b.router, b.db)
 }

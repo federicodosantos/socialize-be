@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/federicodosantos/socialize/internal/model"
@@ -13,7 +12,6 @@ import (
 	customError "github.com/federicodosantos/socialize/pkg/custom-error"
 	"github.com/federicodosantos/socialize/pkg/jwt"
 	"github.com/federicodosantos/socialize/pkg/md5"
-	"github.com/federicodosantos/socialize/pkg/supabase"
 )
 
 type UserUsecaseItf interface {
@@ -26,16 +24,15 @@ type UserUsecaseItf interface {
 
 type UserUsecase struct {
 	userRepo repository.UserRepoItf
-	supabase supabase.SupabaseStorageItf
 	jwt      jwt.JWTItf
 }
 
 func NewUserUsecase(userRepo repository.UserRepoItf,
-	jwt jwt.JWTItf, supabase supabase.SupabaseStorageItf) UserUsecaseItf {
+	jwt jwt.JWTItf) UserUsecaseItf {
 	return &UserUsecase{
 		userRepo: userRepo,
 		jwt:      jwt,
-		supabase: supabase}
+	}
 }
 
 // Register implements UserUCItf.
@@ -130,14 +127,9 @@ func (u *UserUsecase) UpdateUserPhoto(ctx context.Context, req *model.UserUpdate
 		return nil, err
 	}
 
-	if req.Photo != nil {
-
-		photoLink, err := u.supabase.Upload(os.Getenv("SUPABASE_BUCKET_USER"), req.Photo)
-		if err != nil {
-			return nil, err
-		}
+	if req.PhotoUrl != "" {
 		user.Photo = sql.NullString{
-			String: photoLink,
+			String: req.PhotoUrl,
 			Valid:  true,
 		}
 	}

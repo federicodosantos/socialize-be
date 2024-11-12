@@ -9,9 +9,9 @@ import (
 	"github.com/federicodosantos/socialize/internal/middleware"
 	"github.com/federicodosantos/socialize/internal/model"
 	"github.com/federicodosantos/socialize/internal/usecase"
-	customContext "github.com/federicodosantos/socialize/pkg/context"
 	customError "github.com/federicodosantos/socialize/pkg/custom-error"
 	response "github.com/federicodosantos/socialize/pkg/response"
+	"github.com/federicodosantos/socialize/pkg/util"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -93,27 +93,22 @@ func (uh *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 		Value:   token,
 		Expires: time.Now().Add(24 * time.Hour),
 		Path:    "/",
+		Secure: true,
+		SameSite: http.SameSiteNoneMode,
 	})
 
 	response.SuccessResponse(w, http.StatusOK, "successfully login to account", nil)
 }
 
 func (uh *UserHandler) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value(customContext.UserIDKey)
-	if userID == "" {
-		response.FailedResponse(w, http.StatusUnauthorized, "user id not found in context")
-		return
-	}
-
-	intUserID, ok := userID.(int)
-	if !ok {
-		response.FailedResponse(w, http.StatusBadRequest, "invalid or missing userID in context")
+	userId, err := util.GetUserIdFromContext(w,r)
+	if err != nil {
 		return
 	}
 
 	reqCtx := r.Context()
 
-	user, err := uh.userUC.GetUserById(reqCtx, intUserID)
+	user, err := uh.userUC.GetUserById(reqCtx, userId)
 	if err != nil {
 		if errors.Is(err, customError.ErrUserNotFound) {
 			response.FailedResponse(w, http.StatusNotFound, err.Error())
@@ -127,42 +122,21 @@ func (uh *UserHandler) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (uh *UserHandler) UpdateUserPhoto(w http.ResponseWriter, r *http.Request) {
-	var req model.UserUpdatePhoto
+	var req *model.UserUpdatePhoto
 
-	if err := r.ParseMultipartForm(maxUploadSize); err != nil {
-		response.FailedResponse(w, http.StatusBadRequest, "File is too big. 2MB maximum.")
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.FailedResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	file, header, err := r.FormFile("photo")
+	userId, err := util.GetUserIdFromContext(w,r)
 	if err != nil {
-		response.FailedResponse(w, http.StatusBadRequest, "Failed to get file.")
-		return
-	}
-	defer file.Close()
-
-	if header.Size > maxUploadSize {
-		response.FailedResponse(w, http.StatusBadRequest, "The file size exceeds the 2MB limit.")
-		return
-	}
-
-	req.Photo = header
-
-	userID := r.Context().Value(customContext.UserIDKey)
-	if userID == "" {
-		response.FailedResponse(w, http.StatusUnauthorized, "user id not found in context")
-		return
-	}
-
-	intUserID, ok := userID.(int)
-	if !ok {
-		response.FailedResponse(w, http.StatusBadRequest, "invalid or missing userID in context")
 		return
 	}
 
 	reqCtx := r.Context()
 
-	updatedUser, err := uh.userUC.UpdateUserPhoto(reqCtx, &req, intUserID)
+	updatedUser, err := uh.userUC.UpdateUserPhoto(reqCtx, req, userId)
 	if err != nil {
 		response.FailedResponse(w, http.StatusInternalServerError, err.Error())
 		return
@@ -179,21 +153,14 @@ func (uh *UserHandler) UpdateUserData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := r.Context().Value(customContext.UserIDKey)
-	if userID == "" {
-		response.FailedResponse(w, http.StatusUnauthorized, "user id not found in context")
-		return
-	}
-
-	intUserID, ok := userID.(int)
-	if !ok {
-		response.FailedResponse(w, http.StatusBadRequest, "invalid or missing userID in context")
+	userId, err := util.GetUserIdFromContext(w,r)
+	if err != nil {
 		return
 	}
 
 	reqCtx := r.Context()
 
-	updatedUser, err := uh.userUC.UpdateUserData(reqCtx, req, intUserID)
+	updatedUser, err := uh.userUC.UpdateUserData(reqCtx, req, userId)
 	if err != nil {
 		response.FailedResponse(w, http.StatusInternalServerError, err.Error())
 		return

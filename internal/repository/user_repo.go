@@ -35,8 +35,8 @@ func (r *UserRepo) CreateUser(ctx context.Context, user *model.User) error {
 	createdAtStr := util.ConvertTimeToString(user.CreatedAt)
 	updatedAtStr := util.ConvertTimeToString(user.UpdatedAt)
 
-	insertUserQuery := fmt.Sprintf(`INSERT INTO users(id, name, email, password, created_at, updated_at)
-        VALUES(%d, '%s', '%s', '%s', '%s', '%s')`, user.ID, user.Name, user.Email, user.Password, createdAtStr, updatedAtStr)
+	insertUserQuery := fmt.Sprintf(`INSERT INTO users(name, email, password, created_at, updated_at)
+        VALUES('%s', '%s', '%s', '%s', '%s')`, user.Name, user.Email, user.Password, createdAtStr, updatedAtStr)
 
 	exist, err := r.CheckEmailExist(ctx, user.Email)
 	if err != nil {
@@ -52,12 +52,19 @@ func (r *UserRepo) CreateUser(ctx context.Context, user *model.User) error {
 		return err
 	}
 
+	lastInsertID, err := res.LastInsertId()
+	if err != nil {
+		return customError.ErrLastInsertId
+	}
+
 	rows, err := res.RowsAffected()
 	if err != nil {
 		return customError.ErrRowsAffected
 	}
 
 	util.ErrRowsAffected(rows)
+
+	user.ID = int(lastInsertID)
 
 	return nil
 }

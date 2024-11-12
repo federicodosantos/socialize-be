@@ -2,7 +2,6 @@ package model
 
 import (
 	"database/sql"
-	"mime/multipart"
 	"time"
 )
 
@@ -36,7 +35,7 @@ type UserUpdateData struct {
 }
 
 type UserUpdatePhoto struct {
-	Photo *multipart.FileHeader `form:"photo,omitempty"`
+	PhotoUrl string `json:"photo_url"`
 }
 
 type UserResponse struct {

@@ -49,6 +49,6 @@ func (h *FileHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.SuccessResponse(w, http.StatusOK, "Successfully update user Data", url)
+	response.SuccessResponse(w, http.StatusOK, "File uploaded successfully", url)
 
 }
