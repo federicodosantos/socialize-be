@@ -50,14 +50,17 @@ func (b *Bootstrap) InitApp() {
 
 	// initialize repository
 	userRepo := repository.NewUserRepo(b.db)
+	postRepo := repository.NewPostRepo(b.db)
 
 	// initialize usecase
 	fileUsecase := usecase.NewFileUsecase(supabase)
 	userUsecase := usecase.NewUserUsecase(userRepo, jwtService)
+	postUsecase := usecase.NewPostUsecase(postRepo)
 
 	// init handler
 	fileHandler := httpHandler.NewFileHandler(fileUsecase)
 	userHandler := httpHandler.NewUserHandler(userUsecase)
+	postHandler := httpHandler.NewPostHandler(postUsecase)
 
 	// initialize middleware
 	middleware := middleware.NewMiddleware(jwtService, b.logger)
@@ -72,10 +75,10 @@ func (b *Bootstrap) InitApp() {
 		MaxAge:           300,
 	}))
 
-
 	// init routes
 	httpHandler.FileRoutes(b.router, fileHandler, middleware)
 	httpHandler.UserRoutes(b.router, userHandler, middleware)
+	httpHandler.PostRoutes(b.router, postHandler, middleware)
 
 	//health checl
 	util.HealthCheck(b.router, b.db)

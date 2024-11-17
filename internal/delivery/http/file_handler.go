@@ -21,7 +21,7 @@ func FileRoutes(router *chi.Mux, fileHandler *FileHandler, middleware middleware
 	// private routes
 	router.Group(func(r chi.Router) {
 		r.Use(middleware.JwtAuthMiddleware)
-		r.Get("/files/upload", fileHandler.UploadFile)
+		r.Post("/file/upload", fileHandler.UploadFile)
 	})
 }
 

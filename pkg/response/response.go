@@ -8,7 +8,7 @@ import (
 type HttpResponse struct {
 	Status  int    `json:"status"`
 	Message string `json:"message"`
-	Data     any    `json:"obj,omitempty"`
+	Data    any    `json:"obj,omitempty"`
 }
 
 func SuccessResponse(w http.ResponseWriter, status int, message string, data any) {
@@ -18,7 +18,7 @@ func SuccessResponse(w http.ResponseWriter, status int, message string, data any
 	response := HttpResponse{
 		Status:  status,
 		Message: message,
-		Data:     data,
+		Data:    data,
 	}
 
 	json.NewEncoder(w).Encode(response)
@@ -26,8 +26,8 @@ func SuccessResponse(w http.ResponseWriter, status int, message string, data any
 
 func FailedResponse(w http.ResponseWriter, status int, message string) {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)	
-	
+	w.WriteHeader(status)
+
 	errorResponse := HttpResponse{
 		Status:  status,
 		Message: message,

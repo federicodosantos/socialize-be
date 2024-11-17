@@ -18,7 +18,7 @@ type MiddlewareItf interface {
 }
 
 type Middleware struct {
-	jwt jwt.JWTItf
+	jwt    jwt.JWTItf
 	logger *zap.SugaredLogger
 }
 
@@ -64,7 +64,10 @@ func (m *Middleware) LoggingMiddleware(next http.Handler) http.Handler {
 			"remote_addr", r.RemoteAddr,
 		)
 
-		next.ServeHTTP(w, r)
+		// Create a response writer to capture the status code
+		rr := &responseRecorder{ResponseWriter: w, statusCode: http.StatusOK}
+
+		next.ServeHTTP(rr, r)
 
 		// Log informasi response
 		duration := time.Since(start)
@@ -72,7 +75,17 @@ func (m *Middleware) LoggingMiddleware(next http.Handler) http.Handler {
 			"method", r.Method,
 			"url", r.URL.String(),
 			"duration", duration,
-			"status", http.StatusOK,
+			"status", rr.statusCode,
 		)
 	})
+}
+
+type responseRecorder struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (rr *responseRecorder) WriteHeader(code int) {
+	rr.statusCode = code
+	rr.ResponseWriter.WriteHeader(code)
 }

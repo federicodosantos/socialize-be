@@ -6,13 +6,15 @@ import (
 )
 
 type Post struct {
-	ID        int         `db:"id"`
+	ID        int64          `db:"id"`
 	Title     string         `db:"title"`
 	Content   string         `db:"content"`
-	UserID    string         `db:"user_id"`
+	UserID    int64          `db:"user_id"`
 	Image     sql.NullString `db:"image"`
 	CreatedAt time.Time      `db:"created_at"`
 	UpdatedAt time.Time      `db:"updated_at"`
+	UpVote    int64          `db:"up_vote"`
+	DownVote  int64          `db:"down_vote"`
 }
 
 type PostCreate struct {
@@ -22,12 +24,16 @@ type PostCreate struct {
 }
 
 type PostResponse struct {
-	ID        int    	`json:"id"`
+	ID        int64     `json:"id"`
 	Title     string    `json:"title"`
 	Content   string    `json:"content"`
-	UserID    string    `json:"user_id"`
+	UserID    int64     `json:"user_id"`
 	Image     string    `json:"image"`
+	Comment   []Comment `json:"comment,omitempty"`
+	UpVote    int64     `json:"up_vote"`
+	DownVote  int64     `json:"down_vote"`
 	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type PostFilter struct {

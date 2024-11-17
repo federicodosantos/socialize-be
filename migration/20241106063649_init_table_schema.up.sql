@@ -10,6 +10,7 @@ CREATE TABLE `users` (
 
 CREATE TABLE `posts` (
   `id` int PRIMARY KEY AUTO_INCREMENT,
+  `title` varchar(255) NOT NULL,
   `content` text,
   `user_id` int,
   `image` varchar(255),
@@ -26,7 +27,6 @@ CREATE TABLE `comments` (
 );
 
 CREATE TABLE `votes` (
-  `id` int PRIMARY KEY AUTO_INCREMENT,
   `user_id` int UNIQUE,
   `post_id` int UNIQUE,
   `vote` tinyint NOT NULL,
