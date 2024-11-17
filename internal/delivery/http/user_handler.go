@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"time"
 
 	"github.com/federicodosantos/socialize/internal/middleware"
 	"github.com/federicodosantos/socialize/internal/model"
@@ -88,16 +87,7 @@ func (uh *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	http.SetCookie(w, &http.Cookie{
-		Name:    "jwt-token",
-		Value:   token,
-		Expires: time.Now().Add(24 * time.Hour),
-		Path:    "/",
-		Secure: true,
-		SameSite: http.SameSiteNoneMode,
-	})
-
-	response.SuccessResponse(w, http.StatusOK, "successfully login to account", nil)
+	response.SuccessResponse(w, http.StatusOK, "successfully login to account", token)
 }
 
 func (uh *UserHandler) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
