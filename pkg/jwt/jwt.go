@@ -8,8 +8,8 @@ import (
 )
 
 type JWTItf interface {
-	CreateToken(userID int) (string, error)
-	VerifyToken(tokenString string) (int, error)
+	CreateToken(userID int64) (string, error)
+	VerifyToken(tokenString string) (int64, error)
 }
 
 type JWT struct {
@@ -31,11 +31,11 @@ func NewJwt(SecretKey string, ExpireTime string) (JWTItf, error) {
 
 type UserClaim struct {
 	jwt.RegisteredClaims
-	UserID int
+	UserID int64
 }
 
 // CreateToken implements JWTItf.
-func (j *JWT) CreateToken(userID int) (string, error) {
+func (j *JWT) CreateToken(userID int64) (string, error) {
 	if j.ExpireTime <= 0 {
 		return "", fmt.Errorf("jwt expire time must be greater than 0")
 	}
@@ -58,7 +58,7 @@ func (j *JWT) CreateToken(userID int) (string, error) {
 }
 
 // VerifyToken implements JWTItf.
-func (j *JWT) VerifyToken(tokenString string) (int, error) {
+func (j *JWT) VerifyToken(tokenString string) (int64, error) {
 	var claims UserClaim
 
 	token, err := jwt.ParseWithClaims(tokenString, &claims, func(t *jwt.Token) (interface{}, error) {

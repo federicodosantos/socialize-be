@@ -16,7 +16,7 @@ import (
 type UserRepoItf interface {
 	CreateUser(ctx context.Context, user *model.User) error
 	GetUserByEmail(ctx context.Context, email string) (*model.User, error)
-	GetUserById(ctx context.Context, userId int) (*model.User, error)
+	GetUserById(ctx context.Context, userId int64) (*model.User, error)
 	CheckEmailExist(ctx context.Context, email string) (bool, error)
 	UpdateUserData(ctx context.Context, user *model.User) error
 	UpdateUserPhoto(ctx context.Context, user *model.User) error
@@ -35,8 +35,12 @@ func (r *UserRepo) CreateUser(ctx context.Context, user *model.User) error {
 	createdAtStr := util.ConvertTimeToString(user.CreatedAt)
 	updatedAtStr := util.ConvertTimeToString(user.UpdatedAt)
 
-	insertUserQuery := fmt.Sprintf(`INSERT INTO users(name, email, password, created_at, updated_at)
-        VALUES('%s', '%s', '%s', '%s', '%s')`, user.Name, user.Email, user.Password, createdAtStr, updatedAtStr)
+	insertUserQuery := fmt.Sprintf(`
+	INSERT INTO users(
+		name, email, password, created_at, updated_at)
+  VALUES 
+		('%s', '%s', '%s', '%s', '%s')
+	`, user.Name, user.Email, user.Password, createdAtStr, updatedAtStr)
 
 	exist, err := r.CheckEmailExist(ctx, user.Email)
 	if err != nil {
@@ -62,15 +66,13 @@ func (r *UserRepo) CreateUser(ctx context.Context, user *model.User) error {
 		return customError.ErrRowsAffected
 	}
 
-	util.ErrRowsAffected(rows)
+	user.ID = lastInsertID
 
-	user.ID = int(lastInsertID)
-
-	return nil
+	return util.ErrRowsAffected(rows)
 }
 
 // GetUserById implements UserRepoItf.
-func (r *UserRepo) GetUserById(ctx context.Context, userId int) (*model.User, error) {
+func (r *UserRepo) GetUserById(ctx context.Context, userId int64) (*model.User, error) {
 	query := fmt.Sprintf("SELECT * FROM users WHERE id = %d", userId)
 
 	var user model.User
