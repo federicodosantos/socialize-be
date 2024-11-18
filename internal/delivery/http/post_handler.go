@@ -25,12 +25,19 @@ func PostRoutes(router *chi.Mux, postHandle *PostHandler, middleware middleware.
 	// private routes
 	router.Group(func(r chi.Router) {
 		r.Use(middleware.JwtAuthMiddleware)
-		r.Post("/post", postHandle.CreatePost)
-		r.Get("/post", postHandle.GetAllPost)
-		r.Get("/post/{postID}", postHandle.GetPostByID)
-		r.Delete("/post/{postID}", postHandle.DeletePost)
-		r.Post("/post/{postID}/up-vote", postHandle.UpVote)
-		r.Post("/post/{postID}/down-vote", postHandle.DownVote)
+		r.Route("/post", func(r chi.Router) {
+			r.Post("/", postHandle.CreatePost)
+			r.Get("/", postHandle.GetAllPost)
+			r.Get("/{postID}", postHandle.GetPostByID)
+			r.Delete("/{postID}", postHandle.DeletePost)
+			r.Post("/{postID}/up-vote", postHandle.UpVote)
+			r.Post("/{postID}/down-vote", postHandle.DownVote)
+		
+		
+			r.Post("/{postID}/comment", postHandle.CreateComment)
+			r.Delete("/{postID}/comment/{commentID}", postHandle.DeleteComment)
+		})
+		
 	})
 }
 
@@ -112,6 +119,58 @@ func (h *PostHandler) DeletePost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.SuccessResponse(w, http.StatusOK, "Post deleted successfully", nil)
+}
+
+func (h *PostHandler) CreateComment(w http.ResponseWriter, r *http.Request) {
+	postIDStr := chi.URLParam(r, "postID")
+    postID, err := strconv.ParseInt(postIDStr, 10, 64)
+    if err != nil {
+        response.FailedResponse(w, http.StatusBadRequest, "Invalid post ID")
+        return
+    }
+	
+	var model *model.CommentCreate
+
+	if err := json.NewDecoder(r.Body).Decode(&model); err != nil {
+		response.FailedResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	model.PostID = postID
+
+	reqCtx := r.Context()
+
+	userID, err := util.GetUserIdFromContext(w, r)
+	if err != nil {
+		return
+	}
+
+	err = h.postUsecase.CreateComment(reqCtx, model, userID)
+	if err != nil {
+		response.FailedResponse(w, http.StatusInternalServerError, err.Error())
+		return 
+	}
+
+	response.SuccessResponse(w, http.StatusCreated, "successfully create a new comment", nil)
+}
+
+func (h *PostHandler) DeleteComment(w http.ResponseWriter, r *http.Request) {
+	commentIDStr := chi.URLParam(r, "commentID")
+	commentID, err := strconv.ParseInt(commentIDStr, 10, 64)
+	if err != nil {
+		response.FailedResponse(w, http.StatusBadRequest, "Invalid comment ID")
+		return
+	}
+
+	reqCtx := r.Context()
+
+	err = h.postUsecase.DeleteComment(reqCtx, commentID)
+	if err != nil {
+		response.FailedResponse(w, http.StatusInternalServerError, "Failed to delete comment")
+		return
+	}
+
+	response.SuccessResponse(w, http.StatusOK, "Comment deleted successfully", nil)
 }
 
 func (h *PostHandler) UpVote(w http.ResponseWriter, r *http.Request) {

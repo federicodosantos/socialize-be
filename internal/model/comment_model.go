@@ -5,7 +5,7 @@ import "time"
 type Comment struct {
 	ID        int64     `db:"id"`
 	PostID    int64     `db:"post_id"`
-	UserID    string    `db:"user_id"`
+	UserID    int64   `db:"user_id"`
 	Comment   string    `db:"comment"`
 	CreatedAt time.Time `db:"created_at"`
 }
@@ -18,7 +18,7 @@ type CommentCreate struct {
 type CommentResponse struct {
 	ID        int64  `json:"id"`
 	PostID    int64  `json:"post_id"`
-	UserID    string `json:"user_id"`
+	UserID    int64 `json:"user_id"`
 	Comment   string `json:"comment"`
-	CreatedAt string `json:"created_at"`
+	CreatedAt time.Time `json:"created_at"`
 }

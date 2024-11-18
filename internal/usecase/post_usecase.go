@@ -15,17 +15,22 @@ type PostUsecaseItf interface {
 	GetPostByID(ctx context.Context, postID int64) (*model.PostResponse, error)
 	DeletePost(ctx context.Context, postID int64) error
 
+	CreateComment(ctx context.Context, req *model.CommentCreate, userID int64) error
+	DeleteComment(ctx context.Context, id int64) error
+
 	CreateUpVote(ctx context.Context, postID int64, userID int64) error
 	CreateDownVote(ctx context.Context, postID int64, userID int64) error
 }
 
 type PostUsecase struct {
-	postRepo repository.PostRepoItf
+	postRepo    repository.PostRepoItf
+	commentRepo repository.CommentRepoItf
 }
 
-func NewPostUsecase(postRepo repository.PostRepoItf) PostUsecaseItf {
+func NewPostUsecase(postRepo repository.PostRepoItf, commentRepo repository.CommentRepoItf) PostUsecaseItf {
 	return &PostUsecase{
-		postRepo: postRepo,
+		postRepo:    postRepo,
+		commentRepo: commentRepo,
 	}
 }
 
@@ -83,13 +88,50 @@ func (uc *PostUsecase) GetPostByID(ctx context.Context, postID int64) (*model.Po
 		return nil, err
 	}
 
-	// ToDo : get comment by postID
+	comments, err := uc.commentRepo.GetAllCommentsByPostId(ctx, post.ID)
+	if err != nil {
+		return nil, err
+	}
 
-	return convertToPostRespone(post), nil
+	var commentsResp []*model.CommentResponse
+	for _, comment := range comments {
+		commentsResp = append(commentsResp, &model.CommentResponse{
+			ID:        comment.ID,
+			PostID:    comment.PostID,
+			UserID:    comment.UserID,
+			Comment:   comment.Comment,
+			CreatedAt: comment.CreatedAt,
+		})
+	}
+
+	postResponse := convertToPostRespone(post)
+	postResponse.Comment = commentsResp
+
+	return postResponse, nil
 }
 
 func (uc *PostUsecase) DeletePost(ctx context.Context, postID int64) error {
 	return uc.postRepo.DeletePost(ctx, postID)
+}
+
+func (uc *PostUsecase) CreateComment(ctx context.Context, req *model.CommentCreate, userID int64) error {
+	comment := &model.Comment{
+		PostID: req.PostID,
+		UserID: userID,
+		Comment: req.Comment,
+		CreatedAt: time.Now(),
+	}
+
+	err := uc.commentRepo.CreateComment(ctx, comment)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (uc *PostUsecase) DeleteComment(ctx context.Context, id int64) error {
+	return uc.commentRepo.DeleteComment(ctx, id)
 }
 
 func (uc *PostUsecase) CreateUpVote(ctx context.Context, postID int64, userID int64) error {
