@@ -10,6 +10,8 @@ type Post struct {
 	Title     string         `db:"title"`
 	Content   string         `db:"content"`
 	UserID    int64          `db:"user_id"`
+	UserName  string	 	 `db:"user_name"`
+	UserPhoto sql.NullString `db:"user_photo"`
 	Image     sql.NullString `db:"image"`
 	CreatedAt time.Time      `db:"created_at"`
 	UpdatedAt time.Time      `db:"updated_at"`
@@ -24,19 +26,18 @@ type PostCreate struct {
 }
 
 type PostResponse struct {
-	ID           int64              `json:"id"`
-	Title        string             `json:"title"`
-	Content      string             `json:"content"`
-	UserID       int64              `json:"user_id"`
-	UserPhoto    string             `json:"user_photo"`
-	UserName     string             `json:"user_name"`
-	Image        string             `json:"image"`
-	TotalComment int64              `json:"total_comment"`
-	Comment      []*CommentResponse `json:"comment,omitempty"`
-	UpVote       int64              `json:"up_vote"`
-	DownVote     int64              `json:"down_vote"`
-	CreatedAt    time.Time          `json:"created_at"`
-	UpdatedAt    time.Time          `json:"updated_at"`
+	ID        int64     		 `json:"id"`
+	Title     string    		 `json:"title"`
+	Content   string    		 `json:"content"`
+	UserID    int64     		 `json:"user_id"`
+	UserName  string			 `json:"user_name"`
+	UserPhoto string	 		 `json:"user_photo"`
+	Image     string    		 `json:"image"`
+	Comment   []*CommentResponse `json:"comment,omitempty"`
+	UpVote    int64     		 `json:"up_vote"`
+	DownVote  int64     		 `json:"down_vote"`
+	CreatedAt time.Time 		 `json:"created_at"`
+	UpdatedAt time.Time 		 `json:"updated_at"`
 }
 
 type PostFilter struct {

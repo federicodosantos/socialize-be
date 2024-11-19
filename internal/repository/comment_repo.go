@@ -56,7 +56,18 @@ func (r *CommentRepo) CreateComment(ctx context.Context, comment *model.Comment)
 func (r *CommentRepo) GetAllCommentsByPostId(ctx context.Context, postId int64) ([]*model.Comment, error) {
 	var comments []*model.Comment
 
-	getAllCommentsByPostIdQUery := fmt.Sprintf(`SELECT * FROM comments WHERE post_id = %d`, postId)
+	getAllCommentsByPostIdQUery := fmt.Sprintf(`
+	SELECT 
+		c.id,
+		c.post_id,
+		c.user_id,
+		c.comment,
+		c.created_at,
+		u.name AS user_name,      
+		u.photo AS user_photo     
+	FROM comments AS c
+	JOIN users AS u ON u.id = c.user_id
+	WHERE c.post_id = %d`, postId)
 
 	err := r.db.SelectContext(ctx, &comments, getAllCommentsByPostIdQUery)
 	if err != nil {

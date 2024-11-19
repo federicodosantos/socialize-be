@@ -64,20 +64,23 @@ func (r *PostRepo) GetAllPost(ctx context.Context, filter model.PostFilter) ([]*
 
 	getAllPostQuery := fmt.Sprintf(`
 	SELECT 
-		id,
-		title,
-		content,
-		user_id,
-		image,
-		created_at,
-		updated_at, 
-		(SELECT count(*) from votes WHERE vote = 1 AND post_id = posts.id) AS up_vote, 
-		(SELECT count(*) from votes WHERE vote = -1 AND post_id = posts.id) AS down_vote  
-	FROM posts
+		p.id,
+		p.title,
+		p.content,
+		p.user_id,
+		p.image,
+		u.name AS user_name,
+		u.photo AS user_photo,
+		p.created_at,
+		p.updated_at, 
+		(SELECT count(*) from votes WHERE vote = 1 AND post_id = p.id) AS up_vote, 
+		(SELECT count(*) from votes WHERE vote = -1 AND post_id = p.id) AS down_vote  
+	FROM posts AS p
+	JOIN users AS u ON u.id = p.user_id
 	`)
 
 	if filter.Keyword != "" {
-		getAllPostQuery = fmt.Sprintf(`%s WHERE content LIKE '%%%s%%'`, getAllPostQuery, filter.Keyword)
+		getAllPostQuery = fmt.Sprintf(`%s WHERE p.content LIKE '%%%s%%'`, getAllPostQuery, filter.Keyword)
 	}
 
 	err := r.db.SelectContext(ctx, &posts, getAllPostQuery)
@@ -93,16 +96,19 @@ func (r *PostRepo) GetAllPostByUserID(ctx context.Context, filter model.PostFilt
 
 	getAllPostQuery := fmt.Sprintf(`
 	SELECT 
-		id,
-		title,
-		content,
-		user_id,
-		image,
-		created_at,
-		updated_at, 
-		(SELECT count(*) from votes WHERE vote = 1 AND post_id = posts.id) AS up_vote, 
-		(SELECT count(*) from votes WHERE vote = -1 AND post_id = posts.id) AS down_vote  
-	FROM posts 
+		p.id,
+		p.title,
+		p.content,
+		p.user_id,
+		p.image,
+		u.name AS user_name,
+		u.photo AS user_photo,
+		p.created_at,
+		p.updated_at, 
+		(SELECT count(*) from votes WHERE vote = 1 AND post_id = p.id) AS up_vote, 
+		(SELECT count(*) from votes WHERE vote = -1 AND post_id = p.id) AS down_vote   
+	FROM posts AS p
+	JOIN users AS u ON u.id = p.user_id
 	WHERE user_id = %d
 	`, userID)
 
@@ -123,17 +129,20 @@ func (r *PostRepo) GetPostByID(ctx context.Context, postID int64) (*model.Post, 
 
 	query := fmt.Sprintf(`
 	SELECT 
-		id,
-		title,
-		content,
-		user_id,
-		image,
-		created_at,
-		updated_at, 
-		(SELECT count(*) from votes WHERE vote = 1 AND post_id = posts.id) AS up_vote, 
-		(SELECT count(*) from votes WHERE vote = -1 AND post_id = posts.id) AS down_vote  
-	FROM posts 
-	WHERE id = %d`, postID)
+		p.id,
+		p.title,
+		p.content,
+		p.user_id,
+		p.image,
+		u.name AS user_name,
+		u.photo AS user_photo,
+		p.created_at,
+		p.updated_at, 
+		(SELECT count(*) from votes WHERE vote = 1 AND post_id = p.id) AS up_vote, 
+		(SELECT count(*) from votes WHERE vote = -1 AND post_id = p.id) AS down_vote   
+	FROM posts AS p
+	JOIN users AS u ON u.id = p.user_id 
+	WHERE p.id = %d`, postID)
 
 	err := r.db.GetContext(ctx, &post, query)
 	if err != nil {
