@@ -116,9 +116,9 @@ func (uc *PostUsecase) DeletePost(ctx context.Context, postID int64) error {
 
 func (uc *PostUsecase) CreateComment(ctx context.Context, req *model.CommentCreate, userID int64) error {
 	comment := &model.Comment{
-		PostID: req.PostID,
-		UserID: userID,
-		Comment: req.Comment,
+		PostID:    req.PostID,
+		UserID:    userID,
+		Comment:   req.Comment,
 		CreatedAt: time.Now(),
 	}
 

@@ -49,19 +49,19 @@ func (b *Bootstrap) InitApp() {
 	supabase := supabase.NewSupabaseStorage(client)
 
 	// initialize repository
-	userRepo 	:= repository.NewUserRepo(b.db)
-	postRepo 	:= repository.NewPostRepo(b.db)
+	userRepo := repository.NewUserRepo(b.db)
+	postRepo := repository.NewPostRepo(b.db)
 	commentRepo := repository.NewCommentRepo(b.db)
 
 	// initialize usecase
-	fileUsecase    := usecase.NewFileUsecase(supabase)
-	userUsecase    := usecase.NewUserUsecase(userRepo, jwtService)
-	postUsecase    := usecase.NewPostUsecase(postRepo, commentRepo)
+	fileUsecase := usecase.NewFileUsecase(supabase)
+	userUsecase := usecase.NewUserUsecase(userRepo, jwtService)
+	postUsecase := usecase.NewPostUsecase(postRepo, commentRepo)
 
 	// init handler
-	fileHandler    := httpHandler.NewFileHandler(fileUsecase)
-	userHandler    := httpHandler.NewUserHandler(userUsecase)
-	postHandler    := httpHandler.NewPostHandler(postUsecase)
+	fileHandler := httpHandler.NewFileHandler(fileUsecase)
+	userHandler := httpHandler.NewUserHandler(userUsecase)
+	postHandler := httpHandler.NewPostHandler(postUsecase)
 
 	// initialize middleware
 	middleware := middleware.NewMiddleware(jwtService, b.logger)
@@ -73,7 +73,6 @@ func (b *Bootstrap) InitApp() {
 		AllowedMethods:   []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"*"},
 		AllowCredentials: true,
-		MaxAge:           300,
 	}))
 
 	// init routes

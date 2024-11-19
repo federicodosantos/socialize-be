@@ -18,22 +18,25 @@ type Post struct {
 }
 
 type PostCreate struct {
-	Title   string `json:"title"`
-	Content string `json:"content"`
+	Title   string `json:"title" validate:"required"`
+	Content string `json:"content" validate:"required"`
 	Image   string `json:"image"`
 }
 
 type PostResponse struct {
-	ID        int64     		 `json:"id"`
-	Title     string    		 `json:"title"`
-	Content   string    		 `json:"content"`
-	UserID    int64     		 `json:"user_id"`
-	Image     string    		 `json:"image"`
-	Comment   []*CommentResponse `json:"comment,omitempty"`
-	UpVote    int64     		 `json:"up_vote"`
-	DownVote  int64     		 `json:"down_vote"`
-	CreatedAt time.Time 		 `json:"created_at"`
-	UpdatedAt time.Time 		 `json:"updated_at"`
+	ID           int64              `json:"id"`
+	Title        string             `json:"title"`
+	Content      string             `json:"content"`
+	UserID       int64              `json:"user_id"`
+	UserPhoto    string             `json:"user_photo"`
+	UserName     string             `json:"user_name"`
+	Image        string             `json:"image"`
+	TotalComment int64              `json:"total_comment"`
+	Comment      []*CommentResponse `json:"comment,omitempty"`
+	UpVote       int64              `json:"up_vote"`
+	DownVote     int64              `json:"down_vote"`
+	CreatedAt    time.Time          `json:"created_at"`
+	UpdatedAt    time.Time          `json:"updated_at"`
 }
 
 type PostFilter struct {
