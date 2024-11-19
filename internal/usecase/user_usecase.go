@@ -61,15 +61,9 @@ func (u *UserUsecase) Register(ctx context.Context, req *model.UserRegister) (*m
 
 // Login implements UserUCItf.
 func (u *UserUsecase) Login(ctx context.Context, req *model.UserLogin) (string, error) {
-	user, err := u.userRepo.GetUserByEmail(ctx, req.Email)
+	user, err := u.userRepo.UserLogin(ctx, req.Email, md5.HashWithMd5(req.Password))
 	if err != nil {
 		return "", err
-	}
-
-	reqPassword := md5.HashWithMd5(req.Password)
-
-	if reqPassword != user.Password {
-		return "", customError.ErrIncorrectPassword
 	}
 
 	token, err := u.jwt.CreateToken(user.ID)
