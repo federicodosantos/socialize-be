@@ -20,6 +20,7 @@ type UserRepoItf interface {
 	CheckEmailExist(ctx context.Context, email string) (bool, error)
 	UpdateUserData(ctx context.Context, user *model.User) error
 	UpdateUserPhoto(ctx context.Context, user *model.User) error
+	UserLogin(ctx context.Context, email string, password string) (*model.User, error)
 }
 
 type UserRepo struct {
@@ -201,4 +202,22 @@ func (u *UserRepo) CheckEmailExist(ctx context.Context, email string) (bool, err
 	}
 
 	return count > 0, nil
+}
+
+func (u *UserRepo) UserLogin(ctx context.Context, email string, password string) (*model.User, error) {
+	query := fmt.Sprintf("SELECT * FROM users WHERE email = '%s' AND password = '%s'", email, password)
+
+	fmt.Println(query)
+
+	var user model.User
+
+	err := u.db.QueryRowxContext(ctx, query).StructScan(&user)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, customError.ErrUserNotFound
+		}
+		return nil, err
+	}
+
+	return &user, nil
 }
