@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/federicodosantos/socialize/internal/model"
 	customError "github.com/federicodosantos/socialize/pkg/custom-error"
@@ -17,7 +16,7 @@ type PostRepoItf interface {
 	DeletePost(ctx context.Context, postID int64) error
 
 	CreateVote(ctx context.Context, postID int64, userID int64, vote int64) error
-	DeletVote(ctx context.Context, postID int64, userID int64) error
+	DeleteVote(ctx context.Context, postID int64, userID int64) error
 }
 
 type PostRepo struct {
@@ -29,17 +28,12 @@ func NewPostRepo(db *sqlx.DB) PostRepoItf {
 }
 
 func (r *PostRepo) CreatePost(ctx context.Context, post *model.Post) error {
-	createdAtStr := util.ConvertTimeToString(post.CreatedAt)
-	updatedAtStr := util.ConvertTimeToString(post.UpdatedAt)
-
-	insertPostQuery := fmt.Sprintf(`
+	query := `
 	INSERT INTO posts (
 		user_id, title, content, image, created_at, updated_at
-	) VALUES (
-		%d, '%s', '%s', '%s', '%s', '%s'
-	)`, post.UserID, post.Title, post.Content, post.Image.String, createdAtStr, updatedAtStr)
+	) VALUES (?, ?, ?, ?, ?, ?)`
 
-	res, err := r.db.ExecContext(ctx, insertPostQuery)
+	res, err := r.db.ExecContext(ctx, query, post.UserID, post.Title, post.Content, post.Image.String, post.CreatedAt, post.UpdatedAt)
 	if err != nil {
 		return err
 	}
@@ -62,7 +56,7 @@ func (r *PostRepo) CreatePost(ctx context.Context, post *model.Post) error {
 func (r *PostRepo) GetAllPost(ctx context.Context, filter model.PostFilter) ([]*model.Post, error) {
 	var posts []*model.Post
 
-	getAllPostQuery := fmt.Sprintf(`
+	query := `
 	SELECT 
 		p.id,
 		p.title,
@@ -76,14 +70,15 @@ func (r *PostRepo) GetAllPost(ctx context.Context, filter model.PostFilter) ([]*
 		(SELECT count(*) from votes WHERE vote = 1 AND post_id = p.id) AS up_vote, 
 		(SELECT count(*) from votes WHERE vote = -1 AND post_id = p.id) AS down_vote  
 	FROM posts AS p
-	JOIN users AS u ON u.id = p.user_id
-	`)
+	JOIN users AS u ON u.id = p.user_id`
 
+	var args []interface{}
 	if filter.Keyword != "" {
-		getAllPostQuery = fmt.Sprintf(`%s WHERE p.content LIKE '%%%s%%'`, getAllPostQuery, filter.Keyword)
+		query += ` WHERE p.content LIKE ?`
+		args = append(args, "%"+filter.Keyword+"%")
 	}
 
-	err := r.db.SelectContext(ctx, &posts, getAllPostQuery)
+	err := r.db.SelectContext(ctx, &posts, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +89,7 @@ func (r *PostRepo) GetAllPost(ctx context.Context, filter model.PostFilter) ([]*
 func (r *PostRepo) GetAllPostByUserID(ctx context.Context, filter model.PostFilter, userID int64) ([]*model.Post, error) {
 	var posts []*model.Post
 
-	getAllPostQuery := fmt.Sprintf(`
+	query := `
 	SELECT 
 		p.id,
 		p.title,
@@ -109,14 +104,17 @@ func (r *PostRepo) GetAllPostByUserID(ctx context.Context, filter model.PostFilt
 		(SELECT count(*) from votes WHERE vote = -1 AND post_id = p.id) AS down_vote   
 	FROM posts AS p
 	JOIN users AS u ON u.id = p.user_id
-	WHERE user_id = %d
-	`, userID)
+	WHERE user_id = ?`
+
+	var args []interface{}
+	args = append(args, userID)
 
 	if filter.Keyword != "" {
-		getAllPostQuery = fmt.Sprintf(`%s WHERE content LIKE '%%%s%%'`, getAllPostQuery, filter.Keyword)
+		query += ` AND p.content LIKE ?`
+		args = append(args, "%"+filter.Keyword+"%")
 	}
 
-	err := r.db.SelectContext(ctx, &posts, getAllPostQuery)
+	err := r.db.SelectContext(ctx, &posts, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +125,7 @@ func (r *PostRepo) GetAllPostByUserID(ctx context.Context, filter model.PostFilt
 func (r *PostRepo) GetPostByID(ctx context.Context, postID int64) (*model.Post, error) {
 	var post model.Post
 
-	query := fmt.Sprintf(`
+	query := `
 	SELECT 
 		p.id,
 		p.title,
@@ -142,9 +140,9 @@ func (r *PostRepo) GetPostByID(ctx context.Context, postID int64) (*model.Post, 
 		(SELECT count(*) from votes WHERE vote = -1 AND post_id = p.id) AS down_vote   
 	FROM posts AS p
 	JOIN users AS u ON u.id = p.user_id 
-	WHERE p.id = %d`, postID)
+	WHERE p.id = ?`
 
-	err := r.db.GetContext(ctx, &post, query)
+	err := r.db.GetContext(ctx, &post, query, postID)
 	if err != nil {
 		return nil, err
 	}
@@ -153,9 +151,9 @@ func (r *PostRepo) GetPostByID(ctx context.Context, postID int64) (*model.Post, 
 }
 
 func (r *PostRepo) DeletePost(ctx context.Context, postID int64) error {
-	query := fmt.Sprintf("DELETE FROM posts WHERE id = %d", postID)
+	query := `DELETE FROM posts WHERE id = ?`
 
-	res, err := r.db.ExecContext(ctx, query)
+	res, err := r.db.ExecContext(ctx, query, postID)
 	if err != nil {
 		return err
 	}
@@ -169,9 +167,9 @@ func (r *PostRepo) DeletePost(ctx context.Context, postID int64) error {
 }
 
 func (r *PostRepo) CreateVote(ctx context.Context, postID int64, userID int64, vote int64) error {
-	query := fmt.Sprintf("INSERT INTO votes(post_id, user_id, vote) VALUES(%d, %d, %d)", postID, userID, vote)
+	query := `INSERT INTO votes(post_id, user_id, vote) VALUES(?, ?, ?)`
 
-	_, err := r.db.ExecContext(ctx, query)
+	_, err := r.db.ExecContext(ctx, query, postID, userID, vote)
 	if err != nil {
 		return err
 	}
@@ -179,10 +177,10 @@ func (r *PostRepo) CreateVote(ctx context.Context, postID int64, userID int64, v
 	return nil
 }
 
-func (r *PostRepo) DeletVote(ctx context.Context, postID int64, userID int64) error {
-	query := fmt.Sprintf("DELETE FROM votes WHERE post_id = %d AND user_id = %d", postID, userID)
+func (r *PostRepo) DeleteVote(ctx context.Context, postID int64, userID int64) error {
+	query := `DELETE FROM votes WHERE post_id = ? AND user_id = ?`
 
-	_, err := r.db.ExecContext(ctx, query)
+	_, err := r.db.ExecContext(ctx, query, postID, userID)
 	if err != nil {
 		return err
 	}

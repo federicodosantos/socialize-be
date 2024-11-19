@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/federicodosantos/socialize/internal/model"
 	customerror "github.com/federicodosantos/socialize/pkg/custom-error"
@@ -23,15 +22,12 @@ type CommentRepo struct {
 func NewCommentRepo(db *sqlx.DB) CommentRepoItf {
 	return &CommentRepo{db: db}
 }
-
 func (r *CommentRepo) CreateComment(ctx context.Context, comment *model.Comment) error {
-	createdAtStr := util.ConvertTimeToString(comment.CreatedAt)
-	
-	createCommentQuery := fmt.Sprintf(
-		`INSERT INTO comments(user_id, post_id, comment, created_at)
-		VALUES(%d, %d, '%s', '%s')`, comment.UserID, comment.PostID, comment.Comment, createdAtStr)
+	query := `
+	INSERT INTO comments(user_id, post_id, comment, created_at)
+	VALUES (?, ?, ?, ?)`
 
-	res, err := r.db.ExecContext(ctx, createCommentQuery)	
+	res, err := r.db.ExecContext(ctx, query, comment.UserID, comment.PostID, comment.Comment, comment.CreatedAt)
 	if err != nil {
 		return err
 	}
@@ -46,7 +42,9 @@ func (r *CommentRepo) CreateComment(ctx context.Context, comment *model.Comment)
 		return customerror.ErrLastInsertId
 	}
 
-	util.ErrRowsAffected(rows)
+	if err := util.ErrRowsAffected(rows); err != nil {
+		return err
+	}
 
 	comment.ID = id
 
@@ -56,7 +54,7 @@ func (r *CommentRepo) CreateComment(ctx context.Context, comment *model.Comment)
 func (r *CommentRepo) GetAllCommentsByPostId(ctx context.Context, postId int64) ([]*model.Comment, error) {
 	var comments []*model.Comment
 
-	getAllCommentsByPostIdQUery := fmt.Sprintf(`
+	query := `
 	SELECT 
 		c.id,
 		c.post_id,
@@ -67,9 +65,9 @@ func (r *CommentRepo) GetAllCommentsByPostId(ctx context.Context, postId int64) 
 		u.photo AS user_photo     
 	FROM comments AS c
 	JOIN users AS u ON u.id = c.user_id
-	WHERE c.post_id = %d`, postId)
+	WHERE c.post_id = ?`
 
-	err := r.db.SelectContext(ctx, &comments, getAllCommentsByPostIdQUery)
+	err := r.db.SelectContext(ctx, &comments, query, postId)
 	if err != nil {
 		return nil, err
 	}
@@ -78,9 +76,9 @@ func (r *CommentRepo) GetAllCommentsByPostId(ctx context.Context, postId int64) 
 }
 
 func (r *CommentRepo) DeleteComment(ctx context.Context, id int64) error {
-	deleteCommentQuery := fmt.Sprintf(`DELETE FROM comments where id = %d`, id)
+	query := `DELETE FROM comments WHERE id = ?`
 
-	res, err := r.db.ExecContext(ctx, deleteCommentQuery)
+	res, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
 		return err
 	}
@@ -90,9 +88,5 @@ func (r *CommentRepo) DeleteComment(ctx context.Context, id int64) error {
 		return customerror.ErrRowsAffected
 	}
 
-	util.ErrRowsAffected(rows)
-
-	return nil
+	return util.ErrRowsAffected(rows)
 }
-
-

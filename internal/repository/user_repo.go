@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"log"
 
 	"github.com/federicodosantos/socialize/internal/model"
@@ -32,15 +31,10 @@ func NewUserRepo(db *sqlx.DB) UserRepoItf {
 
 // CreateUser implements UserRepoItf.
 func (r *UserRepo) CreateUser(ctx context.Context, user *model.User) error {
-	createdAtStr := util.ConvertTimeToString(user.CreatedAt)
-	updatedAtStr := util.ConvertTimeToString(user.UpdatedAt)
-
-	insertUserQuery := fmt.Sprintf(`
-	INSERT INTO users(
-		name, email, password, created_at, updated_at)
-  VALUES 
-		('%s', '%s', '%s', '%s', '%s')
-	`, user.Name, user.Email, user.Password, createdAtStr, updatedAtStr)
+	insertUserQuery := `
+		INSERT INTO users (name, email, password, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?)
+	`
 
 	exist, err := r.CheckEmailExist(ctx, user.Email)
 	if err != nil {
@@ -51,7 +45,7 @@ func (r *UserRepo) CreateUser(ctx context.Context, user *model.User) error {
 		return customError.ErrEmailExist
 	}
 
-	res, err := r.db.ExecContext(ctx, insertUserQuery)
+	res, err := r.db.ExecContext(ctx, insertUserQuery, user.Name, user.Email, user.Password, user.CreatedAt, user.UpdatedAt)
 	if err != nil {
 		return err
 	}
@@ -66,18 +60,20 @@ func (r *UserRepo) CreateUser(ctx context.Context, user *model.User) error {
 		return customError.ErrRowsAffected
 	}
 
-	user.ID = lastInsertID
+	if err := util.ErrRowsAffected(rows); err != nil {
+		return err
+	}
 
-	return util.ErrRowsAffected(rows)
+	user.ID = lastInsertID
+	return nil
 }
 
 // GetUserById implements UserRepoItf.
 func (r *UserRepo) GetUserById(ctx context.Context, userId int64) (*model.User, error) {
-	query := fmt.Sprintf("SELECT * FROM users WHERE id = %d", userId)
+	query := `SELECT * FROM users WHERE id = ?`
 
 	var user model.User
-
-	err := r.db.QueryRowxContext(ctx, query).StructScan(&user)
+	err := r.db.QueryRowxContext(ctx, query, userId).StructScan(&user)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, customError.ErrUserNotFound
@@ -90,11 +86,10 @@ func (r *UserRepo) GetUserById(ctx context.Context, userId int64) (*model.User, 
 
 // GetUserByEmail implements UserRepoItf.
 func (r *UserRepo) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
-	query := fmt.Sprintf("SELECT * FROM users WHERE email = '%s'", email)
+	query := `SELECT * FROM users WHERE email = ?`
 
 	var user model.User
-
-	err := r.db.QueryRowxContext(ctx, query).StructScan(&user)
+	err := r.db.QueryRowxContext(ctx, query, email).StructScan(&user)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, customError.ErrEmailNotFound
@@ -107,11 +102,11 @@ func (r *UserRepo) GetUserByEmail(ctx context.Context, email string) (*model.Use
 
 // UpdateUserData implements UserRepoItf.
 func (r *UserRepo) UpdateUserData(ctx context.Context, user *model.User) error {
-	updatedAtStr := util.ConvertTimeToString(user.UpdatedAt)
-
-	query := fmt.Sprintf(`UPDATE users 
-	SET name = '%s', email = '%s', password = '%s', updated_at = '%s'
-	WHERE id = %d'`, user.Name, user.Email, user.Password, updatedAtStr, user.ID)
+	query := `
+		UPDATE users
+		SET name = ?, email = ?, password = ?, updated_at = ?
+		WHERE id = ?
+	`
 
 	tx, err := r.db.Beginx()
 	if err != nil {
@@ -120,14 +115,13 @@ func (r *UserRepo) UpdateUserData(ctx context.Context, user *model.User) error {
 
 	defer func() {
 		if err != nil {
-			if err = tx.Rollback(); err != nil {
-				log.Printf("cannot rollback tx: %s", err)
-				return
+			if rollbackErr := tx.Rollback(); rollbackErr != nil {
+				log.Printf("cannot rollback tx: %s", rollbackErr)
 			}
 		}
 	}()
 
-	res, err := tx.ExecContext(ctx, query)
+	res, err := tx.ExecContext(ctx, query, user.Name, user.Email, user.Password, user.UpdatedAt, user.ID)
 	if err != nil {
 		return err
 	}
@@ -137,39 +131,35 @@ func (r *UserRepo) UpdateUserData(ctx context.Context, user *model.User) error {
 		return err
 	}
 
-	util.ErrRowsAffected(rows)
-
-	err = tx.Commit()
-	if err != nil {
+	if err := util.ErrRowsAffected(rows); err != nil {
 		return err
 	}
 
-	return nil
+	return tx.Commit()
 }
 
-// UpdateUserData implements UserRepoItf.
-func (u *UserRepo) UpdateUserPhoto(ctx context.Context, user *model.User) error {
-	updatedAtStr := util.ConvertTimeToString(user.UpdatedAt)
+// UpdateUserPhoto implements UserRepoItf.
+func (r *UserRepo) UpdateUserPhoto(ctx context.Context, user *model.User) error {
+	query := `
+		UPDATE users
+		SET photo = ?, updated_at = ?
+		WHERE id = ?
+	`
 
-	query := fmt.Sprintf(`UPDATE users 
-	SET photo = '%s', updated_at = '%s'
-	WHERE id = %d`, user.Photo.String, updatedAtStr, user.ID)
-
-	tx, err := u.db.Beginx()
+	tx, err := r.db.Beginx()
 	if err != nil {
 		return err
 	}
 
 	defer func() {
 		if err != nil {
-			if err = tx.Rollback(); err != nil {
-				log.Printf("cannot rollback tx: %s", err)
-				return
+			if rollbackErr := tx.Rollback(); rollbackErr != nil {
+				log.Printf("cannot rollback tx: %s", rollbackErr)
 			}
 		}
 	}()
 
-	res, err := tx.ExecContext(ctx, query)
+	res, err := tx.ExecContext(ctx, query, user.Photo.String, user.UpdatedAt, user.ID)
 	if err != nil {
 		return err
 	}
@@ -179,23 +169,19 @@ func (u *UserRepo) UpdateUserPhoto(ctx context.Context, user *model.User) error 
 		return err
 	}
 
-	util.ErrRowsAffected(rows)
-
-	err = tx.Commit()
-	if err != nil {
+	if err := util.ErrRowsAffected(rows); err != nil {
 		return err
 	}
 
-	return nil
+	return tx.Commit()
 }
 
 // CheckEmailExist implements UserRepoItf.
-func (u *UserRepo) CheckEmailExist(ctx context.Context, email string) (bool, error) {
-	query := fmt.Sprintf(`SELECT COUNT(*) FROM users WHERE email = '%s'`, email)
+func (r *UserRepo) CheckEmailExist(ctx context.Context, email string) (bool, error) {
+	query := `SELECT COUNT(*) FROM users WHERE email = ?`
 
 	var count int
-
-	err := u.db.QueryRowxContext(ctx, query).Scan(&count)
+	err := r.db.QueryRowxContext(ctx, query, email).Scan(&count)
 	if err != nil {
 		return false, err
 	}

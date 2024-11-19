@@ -75,7 +75,7 @@ func convertToPostRespone(post *model.Post) *model.PostResponse {
 		Title:     post.Title,
 		Content:   post.Content,
 		Image:     post.Image.String,
-		UserName: post.UserName,
+		UserName:  post.UserName,
 		UserPhoto: post.Image.String,
 		CreatedAt: post.CreatedAt,
 		UpdatedAt: post.UpdatedAt,
@@ -139,7 +139,7 @@ func (uc *PostUsecase) DeleteComment(ctx context.Context, id int64) error {
 }
 
 func (uc *PostUsecase) CreateUpVote(ctx context.Context, postID int64, userID int64) error {
-	err := uc.postRepo.DeletVote(ctx, postID, userID)
+	err := uc.postRepo.DeleteVote(ctx, postID, userID)
 	if err != nil {
 		return err
 	}
@@ -148,7 +148,7 @@ func (uc *PostUsecase) CreateUpVote(ctx context.Context, postID int64, userID in
 }
 
 func (uc *PostUsecase) CreateDownVote(ctx context.Context, postID int64, userID int64) error {
-	err := uc.postRepo.DeletVote(ctx, postID, userID)
+	err := uc.postRepo.DeleteVote(ctx, postID, userID)
 	if err != nil {
 		return err
 	}
