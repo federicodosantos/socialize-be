@@ -2,8 +2,8 @@ package middleware
 
 import (
 	"context"
-	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	customContext "github.com/federicodosantos/socialize/pkg/context"
@@ -28,17 +28,15 @@ func NewMiddleware(jwt jwt.JWTItf, logger *zap.SugaredLogger) MiddlewareItf {
 
 func (m *Middleware) JwtAuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cookie, err := r.Cookie("jwt-token")
-		if err != nil {
-			if errors.Is(err, http.ErrNoCookie) {
-				response.FailedResponse(w, http.StatusUnauthorized, "no cookie provided")
-				return
-			}
-			response.FailedResponse(w, http.StatusBadRequest, "bad request")
+		
+		bearerToken := r.Header.Get("Authorization")
+
+		if bearerToken == "" {
+			response.FailedResponse(w, http.StatusUnauthorized, "Authorization token is required")
 			return
 		}
 
-		token := cookie.Value
+		token := strings.Split(bearerToken, " ")[1]
 
 		userID, err := m.jwt.VerifyToken(token)
 		if err != nil {
