@@ -75,6 +75,8 @@ func convertToPostRespone(post *model.Post) *model.PostResponse {
 		Title:     post.Title,
 		Content:   post.Content,
 		Image:     post.Image.String,
+		UserName: post.UserName,
+		UserPhoto: post.Image.String,
 		CreatedAt: post.CreatedAt,
 		UpdatedAt: post.UpdatedAt,
 		UpVote:    post.UpVote,
@@ -99,6 +101,8 @@ func (uc *PostUsecase) GetPostByID(ctx context.Context, postID int64) (*model.Po
 			ID:        comment.ID,
 			PostID:    comment.PostID,
 			UserID:    comment.UserID,
+			UserName:  comment.UserName,
+			UserPhoto: comment.UserPhoto.String,
 			Comment:   comment.Comment,
 			CreatedAt: comment.CreatedAt,
 		})
