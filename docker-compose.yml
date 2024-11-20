@@ -33,6 +33,7 @@ services:
     networks:
       - socialize-networks
     restart: always
+    command: ["mysqld", "--mysql-native-password=ON"]
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 30s
