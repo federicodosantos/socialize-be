@@ -37,7 +37,7 @@ func (r *UserRepo) CreateUser(ctx context.Context, user *model.User) error {
 	updatedAtStr := util.ConvertTimeToString(user.UpdatedAt)
 
 	insertUserQuery := fmt.Sprintf(`INSERT INTO users(name, email, password, created_at, updated_at) VALUES ('%s', '%s', '%s', '%s', '%s')`,
-	 user.Name, user.Email, user.Password, createdAtStr, updatedAtStr)
+		user.Name, user.Email, user.Password, createdAtStr, updatedAtStr)
 
 	exist, err := r.CheckEmailExist(ctx, user.Email)
 	if err != nil {
@@ -108,7 +108,7 @@ func (r *UserRepo) UpdateUserData(ctx context.Context, user *model.User) error {
 
 	query := fmt.Sprintf(`UPDATE users 
 	SET name = '%s', email = '%s', password = '%s', updated_at = '%s'
-	WHERE id = %d'`, user.Name, user.Email, user.Password, updatedAtStr, user.ID)
+	WHERE id = %d`, user.Name, user.Email, user.Password, updatedAtStr, user.ID)
 
 	tx, err := r.db.Beginx()
 	if err != nil {
