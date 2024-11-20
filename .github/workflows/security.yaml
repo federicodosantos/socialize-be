@@ -1,7 +1,7 @@
 name: Scan Socialize Application
 on:
   push:
-    branches: [main]
+    branches: [vulnerable, secure]
 
 jobs:
   build-and-deploy:
