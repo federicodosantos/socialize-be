@@ -169,14 +169,38 @@ func (r *PostRepo) DeletePost(ctx context.Context, postID int64) error {
 }
 
 func (r *PostRepo) CreateVote(ctx context.Context, postID int64, userID int64, vote int64) error {
-	query := fmt.Sprintf("INSERT INTO votes(post_id, user_id, vote) VALUES(%d, %d, %d)", postID, userID, vote)
+    queryCheck := fmt.Sprintf("SELECT COUNT(*) FROM posts WHERE id = %d", postID)
+    var count int
+    err := r.db.QueryRowContext(ctx, queryCheck).Scan(&count)
+    if err != nil {
+        return fmt.Errorf("failed to check post_id: %w", err)
+    }
 
-	_, err := r.db.ExecContext(ctx, query)
-	if err != nil {
-		return err
-	}
+    if count == 0 {
+        return fmt.Errorf("postID %d does not exist in posts", postID)
+    }
 
-	return nil
+    queryCheckVote := fmt.Sprintf("SELECT COUNT(*) FROM votes WHERE post_id = %d AND user_id = %d", postID, userID)
+    err = r.db.QueryRowContext(ctx, queryCheckVote).Scan(&count)
+    if err != nil {
+        return fmt.Errorf("failed to check existing vote: %w", err)
+    }
+
+    if count > 0 {
+        queryUpdateVote := fmt.Sprintf("UPDATE votes SET vote = %d WHERE post_id = %d AND user_id = %d", vote, postID, userID)
+        _, err = r.db.ExecContext(ctx, queryUpdateVote)
+        if err != nil {
+            return fmt.Errorf("failed to update vote: %w", err)
+        }
+    } else {
+        queryInsert := fmt.Sprintf("INSERT INTO votes (post_id, user_id, vote) VALUES (%d, %d, %d)", postID, userID, vote)
+        _, err = r.db.ExecContext(ctx, queryInsert)
+        if err != nil {
+            return fmt.Errorf("failed to insert vote: %w", err)
+        }
+    }
+
+    return nil
 }
 
 func (r *PostRepo) DeletVote(ctx context.Context, postID int64, userID int64) error {

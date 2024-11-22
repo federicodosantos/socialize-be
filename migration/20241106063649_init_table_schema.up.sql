@@ -27,18 +27,20 @@ CREATE TABLE `comments` (
 );
 
 CREATE TABLE `votes` (
-  `user_id` int UNIQUE,
-  `post_id` int UNIQUE,
+  `user_id` int,
+  `post_id` int,
   `vote` tinyint NOT NULL,
-  `created_at` timestamp DEFAULT CURRENT_TIMESTAMP
+  `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`user_id`, `post_id`)
 );
 
-ALTER TABLE `posts` ADD FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
+ALTER TABLE `posts` 
+ADD FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
 
-ALTER TABLE `comments` ADD FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
+ALTER TABLE `votes` 
+ADD FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
+ADD FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`);
 
-ALTER TABLE `comments` ADD FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`);
-
-ALTER TABLE `votes` ADD FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
-
-ALTER TABLE `votes` ADD FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`);
+ALTER TABLE `comments` 
+ADD FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
+ADD FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`);
