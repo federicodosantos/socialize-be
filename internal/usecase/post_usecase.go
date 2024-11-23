@@ -10,16 +10,16 @@ import (
 )
 
 type PostUsecaseItf interface {
-	CreatePost(ctx context.Context, req *model.PostCreate, userID int64) (*model.PostResponse, error)
+	CreatePost(ctx context.Context, req *model.PostCreate, userID string) (*model.PostResponse, error)
 	GetAllPost(ctx context.Context, filter model.PostFilter) ([]model.PostResponse, error)
 	GetPostByID(ctx context.Context, postID int64) (*model.PostResponse, error)
 	DeletePost(ctx context.Context, postID int64) error
 
-	CreateComment(ctx context.Context, req *model.CommentCreate, userID int64) error
+	CreateComment(ctx context.Context, req *model.CommentCreate, userID string) error
 	DeleteComment(ctx context.Context, id int64) error
 
-	CreateUpVote(ctx context.Context, postID int64, userID int64) error
-	CreateDownVote(ctx context.Context, postID int64, userID int64) error
+	CreateUpVote(ctx context.Context, postID int64, userID string) error
+	CreateDownVote(ctx context.Context, postID int64, userID string) error
 }
 
 type PostUsecase struct {
@@ -34,11 +34,14 @@ func NewPostUsecase(postRepo repository.PostRepoItf, commentRepo repository.Comm
 	}
 }
 
-func (uc *PostUsecase) CreatePost(ctx context.Context, req *model.PostCreate, userID int64) (*model.PostResponse, error) {
+func (uc *PostUsecase) CreatePost(ctx context.Context, req *model.PostCreate, userID string) (*model.PostResponse, error) {
 	data := &model.Post{
 		Title:     req.Title,
 		Content:   req.Content,
-		Image:     sql.NullString{String: req.Image},
+		Image:     sql.NullString{
+			String: req.Image, 
+			Valid: true,
+		},
 		UserID:    userID,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
@@ -75,8 +78,8 @@ func convertToPostRespone(post *model.Post) *model.PostResponse {
 		Title:     post.Title,
 		Content:   post.Content,
 		Image:     post.Image.String,
-		UserName: post.UserName,
-		UserPhoto: post.Image.String,
+		UserName:  post.UserName,
+		UserPhoto: post.UserPhoto.String,
 		CreatedAt: post.CreatedAt,
 		UpdatedAt: post.UpdatedAt,
 		UpVote:    post.UpVote,
@@ -118,7 +121,7 @@ func (uc *PostUsecase) DeletePost(ctx context.Context, postID int64) error {
 	return uc.postRepo.DeletePost(ctx, postID)
 }
 
-func (uc *PostUsecase) CreateComment(ctx context.Context, req *model.CommentCreate, userID int64) error {
+func (uc *PostUsecase) CreateComment(ctx context.Context, req *model.CommentCreate, userID string) error {
 	comment := &model.Comment{
 		PostID:    req.PostID,
 		UserID:    userID,
@@ -138,7 +141,7 @@ func (uc *PostUsecase) DeleteComment(ctx context.Context, id int64) error {
 	return uc.commentRepo.DeleteComment(ctx, id)
 }
 
-func (uc *PostUsecase) CreateUpVote(ctx context.Context, postID int64, userID int64) error {
+func (uc *PostUsecase) CreateUpVote(ctx context.Context, postID int64, userID string) error {
 	err := uc.postRepo.DeletVote(ctx, postID, userID)
 	if err != nil {
 		return err
@@ -147,7 +150,7 @@ func (uc *PostUsecase) CreateUpVote(ctx context.Context, postID int64, userID in
 	return uc.postRepo.CreateVote(ctx, postID, userID, 1)
 }
 
-func (uc *PostUsecase) CreateDownVote(ctx context.Context, postID int64, userID int64) error {
+func (uc *PostUsecase) CreateDownVote(ctx context.Context, postID int64, userID string) error {
 	err := uc.postRepo.DeletVote(ctx, postID, userID)
 	if err != nil {
 		return err

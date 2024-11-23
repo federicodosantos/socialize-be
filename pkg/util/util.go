@@ -26,20 +26,20 @@ func ConvertTimeToString(time time.Time) string {
 	return time.Format("2006-01-02 15:04:05")
 }
 
-func GetUserIdFromContext(w http.ResponseWriter, r *http.Request) (int64, error) {
+func GetUserIdFromContext(w http.ResponseWriter, r *http.Request) (string, error) {
 	userID := r.Context().Value(customContext.UserIDKey)
 	if userID == "" {
 		response.FailedResponse(w, http.StatusUnauthorized, "User ID tidak ditemukan dalam konteks")
-		return 0, errors.New("user id not found in context")
+		return "", errors.New("user id not found in context")
 	}
 
-	intUserID, ok := userID.(int64)
+	stringUserID, ok := userID.(string)
 	if !ok {
 		response.FailedResponse(w, http.StatusBadRequest, "User ID tidak valid dalam konteks")
-		return 0, errors.New("invalid or missing userID in context")
+		return "", errors.New("invalid or missing userID in context")
 	}
 
-	return intUserID, nil
+	return stringUserID, nil
 }
 
 func HealthCheck(router *chi.Mux, db *sqlx.DB) {

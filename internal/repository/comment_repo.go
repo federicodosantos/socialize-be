@@ -2,9 +2,9 @@ package repository
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/federicodosantos/socialize/internal/model"
+	"github.com/federicodosantos/socialize/internal/repository/query"
 	customerror "github.com/federicodosantos/socialize/pkg/custom-error"
 	"github.com/federicodosantos/socialize/pkg/util"
 	"github.com/jmoiron/sqlx"
@@ -25,13 +25,8 @@ func NewCommentRepo(db *sqlx.DB) CommentRepoItf {
 }
 
 func (r *CommentRepo) CreateComment(ctx context.Context, comment *model.Comment) error {
-	createdAtStr := util.ConvertTimeToString(comment.CreatedAt)
-	
-	createCommentQuery := fmt.Sprintf(
-		`INSERT INTO comments(user_id, post_id, comment, created_at)
-		VALUES(%d, %d, '%s', '%s')`, comment.UserID, comment.PostID, comment.Comment, createdAtStr)
-
-	res, err := r.db.ExecContext(ctx, createCommentQuery)	
+	res, err := r.db.ExecContext(ctx, query.InsertCommentQuery, 
+		comment.UserID, comment.PostID, comment.Comment, comment.CreatedAt)	
 	if err != nil {
 		return err
 	}
@@ -56,20 +51,7 @@ func (r *CommentRepo) CreateComment(ctx context.Context, comment *model.Comment)
 func (r *CommentRepo) GetAllCommentsByPostId(ctx context.Context, postId int64) ([]*model.Comment, error) {
 	var comments []*model.Comment
 
-	getAllCommentsByPostIdQUery := fmt.Sprintf(`
-	SELECT 
-		c.id,
-		c.post_id,
-		c.user_id,
-		c.comment,
-		c.created_at,
-		u.name AS user_name,      
-		u.photo AS user_photo     
-	FROM comments AS c
-	JOIN users AS u ON u.id = c.user_id
-	WHERE c.post_id = %d`, postId)
-
-	err := r.db.SelectContext(ctx, &comments, getAllCommentsByPostIdQUery)
+	err := r.db.SelectContext(ctx, &comments, query.GetAllCommentsByPostIdQuery, postId)
 	if err != nil {
 		return nil, err
 	}
@@ -78,9 +60,7 @@ func (r *CommentRepo) GetAllCommentsByPostId(ctx context.Context, postId int64) 
 }
 
 func (r *CommentRepo) DeleteComment(ctx context.Context, id int64) error {
-	deleteCommentQuery := fmt.Sprintf(`DELETE FROM comments where id = %d`, id)
-
-	res, err := r.db.ExecContext(ctx, deleteCommentQuery)
+	res, err := r.db.ExecContext(ctx, query.DeleteCommentQuery, id)
 	if err != nil {
 		return err
 	}

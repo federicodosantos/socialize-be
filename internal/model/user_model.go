@@ -6,7 +6,7 @@ import (
 )
 
 type User struct {
-	ID        int64          `db:"id"`
+	ID        string         `db:"id"`
 	Name      string         `db:"name"`
 	Email     string         `db:"email"`
 	Password  string         `db:"password"`
@@ -39,7 +39,7 @@ type UserUpdatePhoto struct {
 }
 
 type UserResponse struct {
-	ID        int64     `json:"id"`
+	ID        string    `json:"id"`
 	Name      string    `json:"name"`
 	Email     string    `json:"email"`
 	Photo     string    `json:"photo"`

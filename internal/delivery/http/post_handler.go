@@ -62,7 +62,7 @@ func (h *PostHandler) CreatePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.SuccessResponse(w, http.StatusOK, "Post created successfully", id)
+	response.SuccessResponse(w, http.StatusCreated, "Post created successfully", id)
 }
 
 func (h *PostHandler) GetAllPost(w http.ResponseWriter, r *http.Request) {

@@ -9,7 +9,7 @@ type Post struct {
 	ID        int64          `db:"id"`
 	Title     string         `db:"title"`
 	Content   string         `db:"content"`
-	UserID    int64          `db:"user_id"`
+	UserID    string         `db:"user_id"`
 	UserName  string	 	 `db:"user_name"`
 	UserPhoto sql.NullString `db:"user_photo"`
 	Image     sql.NullString `db:"image"`
@@ -29,7 +29,7 @@ type PostResponse struct {
 	ID        int64     		 `json:"id"`
 	Title     string    		 `json:"title"`
 	Content   string    		 `json:"content"`
-	UserID    int64     		 `json:"user_id"`
+	UserID    string     		 `json:"user_id"`
 	UserName  string			 `json:"user_name"`
 	UserPhoto string	 		 `json:"user_photo"`
 	Image     string    		 `json:"image"`

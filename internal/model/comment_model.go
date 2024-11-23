@@ -8,7 +8,7 @@ import (
 type Comment struct {
 	ID        int64     		`db:"id"`
 	PostID    int64     		`db:"post_id"`
-	UserID    int64     		`db:"user_id"`
+	UserID    string     		`db:"user_id"`
 	Comment   string    		`db:"comment"`
 	UserName  string    		`db:"user_name"`   
 	UserPhoto sql.NullString    `db:"user_photo"`  
@@ -23,7 +23,7 @@ type CommentCreate struct {
 type CommentResponse struct {
 	ID        int64     `json:"id"`
 	PostID    int64     `json:"post_id"`
-	UserID    int64     `json:"user_id"`
+	UserID    string    `json:"user_id"`
 	Comment   string    `json:"comment"`
 	UserName  string    `json:"user_name"`   
 	UserPhoto string    `json:"user_photo"`  

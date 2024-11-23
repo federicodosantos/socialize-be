@@ -11,15 +11,16 @@ import (
 	"github.com/federicodosantos/socialize/internal/repository"
 	customError "github.com/federicodosantos/socialize/pkg/custom-error"
 	"github.com/federicodosantos/socialize/pkg/jwt"
-	"github.com/federicodosantos/socialize/pkg/md5"
+	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type UserUsecaseItf interface {
 	Register(ctx context.Context, req *model.UserRegister) (*model.UserResponse, error)
 	Login(ctx context.Context, req *model.UserLogin) (string, error)
-	GetUserById(ctx context.Context, userId int64) (*model.UserResponse, error)
-	UpdateUserData(ctx context.Context, req *model.UserUpdateData, userId int64) (*model.UserResponse, error)
-	UpdateUserPhoto(ctx context.Context, req *model.UserUpdatePhoto, userId int64) (*model.UserResponse, error)
+	GetUserById(ctx context.Context, userId string) (*model.UserResponse, error)
+	UpdateUserData(ctx context.Context, req *model.UserUpdateData, userId string) (*model.UserResponse, error)
+	UpdateUserPhoto(ctx context.Context, req *model.UserUpdatePhoto, userId string) (*model.UserResponse, error)
 }
 
 type UserUsecase struct {
@@ -37,17 +38,21 @@ func NewUserUsecase(userRepo repository.UserRepoItf,
 
 // Register implements UserUCItf.
 func (u *UserUsecase) Register(ctx context.Context, req *model.UserRegister) (*model.UserResponse, error) {
-	hashedPassword := md5.HashWithMd5(req.Password)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, err
+	}
 
 	createdUser := &model.User{
+		ID: 	   uuid.NewString(),
 		Name:      req.Name,
 		Email:     req.Email,
-		Password:  hashedPassword,
+		Password:  string(hashedPassword),
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
 
-	err := u.userRepo.CreateUser(ctx, createdUser)
+	err = u.userRepo.CreateUser(ctx, createdUser)
 	if err != nil {
 		if errors.Is(err, customError.ErrEmailExist) {
 			return nil, fmt.Errorf("email : %s already exists: %w", createdUser.Email, err)
@@ -61,7 +66,12 @@ func (u *UserUsecase) Register(ctx context.Context, req *model.UserRegister) (*m
 
 // Login implements UserUCItf.
 func (u *UserUsecase) Login(ctx context.Context, req *model.UserLogin) (string, error) {
-	user, err := u.userRepo.UserLogin(ctx, req.Email, md5.HashWithMd5(req.Password))
+	user, err := u.userRepo.GetUserByEmail(ctx, req.Email)
+	if err != nil {
+		return "", err
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password))
 	if err != nil {
 		return "", err
 	}
@@ -75,7 +85,7 @@ func (u *UserUsecase) Login(ctx context.Context, req *model.UserLogin) (string, 
 }
 
 // GetUserById implements UserUCItf.
-func (u *UserUsecase) GetUserById(ctx context.Context, userId int64) (*model.UserResponse, error) {
+func (u *UserUsecase) GetUserById(ctx context.Context, userId string) (*model.UserResponse, error) {
 	user, err := u.userRepo.GetUserById(ctx, userId)
 	if err != nil {
 		return nil, err
@@ -85,7 +95,7 @@ func (u *UserUsecase) GetUserById(ctx context.Context, userId int64) (*model.Use
 }
 
 // UpdateUser implements UserUCItf.
-func (u *UserUsecase) UpdateUserData(ctx context.Context, req *model.UserUpdateData, userId int64) (*model.UserResponse, error) {
+func (u *UserUsecase) UpdateUserData(ctx context.Context, req *model.UserUpdateData, userId string) (*model.UserResponse, error) {
 	user, err := u.userRepo.GetUserById(ctx, userId)
 	if err != nil {
 		return nil, err
@@ -100,9 +110,12 @@ func (u *UserUsecase) UpdateUserData(ctx context.Context, req *model.UserUpdateD
 	}
 
 	if req.Password != "" {
-		hashedPassword := md5.HashWithMd5(req.Password)
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+		if err != nil {
+			return nil, err
+		}
 
-		user.Password = hashedPassword
+		user.Password = string(hashedPassword)
 	}
 
 	user.UpdatedAt = time.Now()
@@ -115,7 +128,7 @@ func (u *UserUsecase) UpdateUserData(ctx context.Context, req *model.UserUpdateD
 	return convertToUserRespone(user), nil
 }
 
-func (u *UserUsecase) UpdateUserPhoto(ctx context.Context, req *model.UserUpdatePhoto, userId int64) (*model.UserResponse, error) {
+func (u *UserUsecase) UpdateUserPhoto(ctx context.Context, req *model.UserUpdatePhoto, userId string) (*model.UserResponse, error) {
 	user, err := u.userRepo.GetUserById(ctx, userId)
 	if err != nil {
 		return nil, err

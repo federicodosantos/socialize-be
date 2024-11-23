@@ -8,8 +8,8 @@ import (
 )
 
 type JWTItf interface {
-	CreateToken(userID int64) (string, error)
-	VerifyToken(tokenString string) (int64, error)
+	CreateToken(userID string) (string, error)
+	VerifyToken(tokenString string) (string, error)
 }
 
 type JWT struct {
@@ -31,11 +31,11 @@ func NewJwt(SecretKey string, ExpireTime string) (JWTItf, error) {
 
 type UserClaim struct {
 	jwt.RegisteredClaims
-	UserID int64
+	UserID string
 }
 
 // CreateToken implements JWTItf.
-func (j *JWT) CreateToken(userID int64) (string, error) {
+func (j *JWT) CreateToken(userID string) (string, error) {
 	if j.ExpireTime <= 0 {
 		return "", fmt.Errorf("jwt expire time must be greater than 0")
 	}
@@ -58,18 +58,18 @@ func (j *JWT) CreateToken(userID int64) (string, error) {
 }
 
 // VerifyToken implements JWTItf.
-func (j *JWT) VerifyToken(tokenString string) (int64, error) {
+func (j *JWT) VerifyToken(tokenString string) (string, error) {
 	var claims UserClaim
 
 	token, err := jwt.ParseWithClaims(tokenString, &claims, func(t *jwt.Token) (interface{}, error) {
 		return []byte(j.SecretKey), nil
 	})
 	if err != nil {
-		return 0, fmt.Errorf("failed to parse token: %v", err)
+		return "", fmt.Errorf("failed to parse token: %v", err)
 	}
 
 	if !token.Valid {
-		return 0, fmt.Errorf("invalid token")
+		return "", fmt.Errorf("invalid token")
 	}
 
 	return claims.UserID, nil
