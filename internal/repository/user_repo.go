@@ -94,8 +94,8 @@ func (r *UserRepo) UpdateUserData(ctx context.Context, user *model.User) error {
 
 	defer func() {
 		if err != nil {
-			if err = tx.Rollback(); err != nil {
-				log.Printf("cannot rollback tx: %s", err)
+			if rollbackErr := tx.Rollback(); rollbackErr != nil {
+				log.Printf("cannot rollback tx: %s", rollbackErr)
 				return
 			}
 		}
@@ -112,14 +112,11 @@ func (r *UserRepo) UpdateUserData(ctx context.Context, user *model.User) error {
 		return err
 	}
 
-	util.ErrRowsAffected(rows)
-
-	err = tx.Commit()
-	if err != nil {
+	if err := util.ErrRowsAffected(rows); err != nil {
 		return err
 	}
 
-	return nil
+	return tx.Commit()
 }
 
 // UpdateUserData implements UserRepoItf.
@@ -131,8 +128,8 @@ func (u *UserRepo) UpdateUserPhoto(ctx context.Context, user *model.User) error 
 
 	defer func() {
 		if err != nil {
-			if err = tx.Rollback(); err != nil {
-				log.Printf("cannot rollback tx: %s", err)
+			if rollbackErr := tx.Rollback(); rollbackErr != nil {
+				log.Printf("cannot rollback tx: %s", rollbackErr)
 				return
 			}
 		}
@@ -149,14 +146,11 @@ func (u *UserRepo) UpdateUserPhoto(ctx context.Context, user *model.User) error 
 		return err
 	}
 
-	util.ErrRowsAffected(rows)
-
-	err = tx.Commit()
-	if err != nil {
+	if err := util.ErrRowsAffected(rows); err != nil {
 		return err
 	}
 
-	return nil
+	return tx.Commit()
 }
 
 // CheckEmailExist implements UserRepoItf.

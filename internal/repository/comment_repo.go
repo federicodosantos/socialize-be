@@ -23,7 +23,6 @@ type CommentRepo struct {
 func NewCommentRepo(db *sqlx.DB) CommentRepoItf {
 	return &CommentRepo{db: db}
 }
-
 func (r *CommentRepo) CreateComment(ctx context.Context, comment *model.Comment) error {
 	res, err := r.db.ExecContext(ctx, query.InsertCommentQuery, 
 		comment.UserID, comment.PostID, comment.Comment, comment.CreatedAt)	
@@ -41,7 +40,9 @@ func (r *CommentRepo) CreateComment(ctx context.Context, comment *model.Comment)
 		return customerror.ErrLastInsertId
 	}
 
-	util.ErrRowsAffected(rows)
+	if err := util.ErrRowsAffected(rows); err != nil {
+		return err
+	}
 
 	comment.ID = id
 
@@ -70,9 +71,5 @@ func (r *CommentRepo) DeleteComment(ctx context.Context, id int64) error {
 		return customerror.ErrRowsAffected
 	}
 
-	util.ErrRowsAffected(rows)
-
-	return nil
+	return util.ErrRowsAffected(rows)
 }
-
-
