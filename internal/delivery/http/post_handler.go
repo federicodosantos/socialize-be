@@ -26,15 +26,15 @@ func PostRoutes(router *chi.Mux, postHandle *PostHandler, middleware middleware.
 	router.Group(func(r chi.Router) {
 		r.Use(middleware.JwtAuthMiddleware)
 		r.Route("/post", func(r chi.Router) {
-			r.Post("/", postHandle.CreatePost)
-			r.Get("/", postHandle.GetAllPost)
+			r.Post("/", middleware.ValidateMiddleware(http.HandlerFunc(postHandle.CreatePost), &model.PostCreate{}))
+			r.Get("/", middleware.ValidateMiddleware(http.HandlerFunc(postHandle.GetAllPost), &model.PostFilter{}))
 			r.Get("/{postID}", postHandle.GetPostByID)
 			r.Delete("/{postID}", postHandle.DeletePost)
 			r.Post("/{postID}/up-vote", postHandle.UpVote)
 			r.Post("/{postID}/down-vote", postHandle.DownVote)
 		
 		
-			r.Post("/{postID}/comment", postHandle.CreateComment)
+			r.Post("/{postID}/comment", middleware.ValidateMiddleware(http.HandlerFunc(postHandle.CreateComment), &model.CommentCreate{}))
 			r.Delete("/{postID}/comment/{commentID}", postHandle.DeleteComment)
 		})
 		
@@ -45,7 +45,7 @@ func (h *PostHandler) CreatePost(w http.ResponseWriter, r *http.Request) {
 	var model *model.PostCreate
 
 	if err := json.NewDecoder(r.Body).Decode(&model); err != nil {
-		response.FailedResponse(w, http.StatusBadRequest, err.Error())
+		response.FailedResponse(w, http.StatusBadRequest, err.Error(), nil)
 		return
 	}
 
@@ -58,7 +58,7 @@ func (h *PostHandler) CreatePost(w http.ResponseWriter, r *http.Request) {
 
 	id, err := h.postUsecase.CreatePost(reqCtx, model, userID)
 	if err != nil {
-		response.FailedResponse(w, http.StatusInternalServerError, err.Error())
+		response.FailedResponse(w, http.StatusInternalServerError, err.Error(), nil)
 		return
 	}
 
@@ -70,13 +70,13 @@ func (h *PostHandler) GetAllPost(w http.ResponseWriter, r *http.Request) {
 
 	var filter model.PostFilter
 	if err := util.ParsePostFilter(r, &filter); err != nil {
-		response.FailedResponse(w, http.StatusBadRequest, err.Error())
+		response.FailedResponse(w, http.StatusBadRequest, err.Error(), nil)
 		return
 	}
 
 	posts, err := h.postUsecase.GetAllPost(reqCtx, filter)
 	if err != nil {
-		response.FailedResponse(w, http.StatusInternalServerError, err.Error())
+		response.FailedResponse(w, http.StatusInternalServerError, err.Error(), nil)
 		return
 	}
 
@@ -87,7 +87,7 @@ func (h *PostHandler) GetPostByID(w http.ResponseWriter, r *http.Request) {
 	postIDStr := chi.URLParam(r, "postID")
 	postID, err := strconv.ParseInt(postIDStr, 10, 64)
 	if err != nil {
-		response.FailedResponse(w, http.StatusBadRequest, err.Error())
+		response.FailedResponse(w, http.StatusBadRequest, err.Error(), nil)
 		return
 	}
 
@@ -95,7 +95,7 @@ func (h *PostHandler) GetPostByID(w http.ResponseWriter, r *http.Request) {
 
 	post, err := h.postUsecase.GetPostByID(reqCtx, postID)
 	if err != nil {
-		response.FailedResponse(w, http.StatusInternalServerError, err.Error())
+		response.FailedResponse(w, http.StatusInternalServerError, err.Error(), nil)
 		return
 	}
 
@@ -106,7 +106,7 @@ func (h *PostHandler) DeletePost(w http.ResponseWriter, r *http.Request) {
 	postIDStr := chi.URLParam(r, "postID")
 	postID, err := strconv.ParseInt(postIDStr, 10, 64)
 	if err != nil {
-		response.FailedResponse(w, http.StatusBadRequest, err.Error())
+		response.FailedResponse(w, http.StatusBadRequest, err.Error(), nil)
 		return
 	}
 
@@ -114,7 +114,7 @@ func (h *PostHandler) DeletePost(w http.ResponseWriter, r *http.Request) {
 
 	err = h.postUsecase.DeletePost(reqCtx, postID)
 	if err != nil {
-		response.FailedResponse(w, http.StatusInternalServerError, err.Error())
+		response.FailedResponse(w, http.StatusInternalServerError, err.Error(), nil)
 		return
 	}
 
@@ -125,18 +125,16 @@ func (h *PostHandler) CreateComment(w http.ResponseWriter, r *http.Request) {
 	postIDStr := chi.URLParam(r, "postID")
     postID, err := strconv.ParseInt(postIDStr, 10, 64)
     if err != nil {
-        response.FailedResponse(w, http.StatusBadRequest, "Invalid post ID")
+        response.FailedResponse(w, http.StatusBadRequest, "Invalid post ID", nil)
         return
     }
 	
 	var model *model.CommentCreate
 
 	if err := json.NewDecoder(r.Body).Decode(&model); err != nil {
-		response.FailedResponse(w, http.StatusBadRequest, err.Error())
+		response.FailedResponse(w, http.StatusBadRequest, err.Error(), nil)
 		return
 	}
-
-	model.PostID = postID
 
 	reqCtx := r.Context()
 
@@ -145,9 +143,9 @@ func (h *PostHandler) CreateComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.postUsecase.CreateComment(reqCtx, model, userID)
+	err = h.postUsecase.CreateComment(reqCtx, model, userID, postID)
 	if err != nil {
-		response.FailedResponse(w, http.StatusInternalServerError, err.Error())
+		response.FailedResponse(w, http.StatusInternalServerError, err.Error(), nil)
 		return 
 	}
 
@@ -158,7 +156,7 @@ func (h *PostHandler) DeleteComment(w http.ResponseWriter, r *http.Request) {
 	commentIDStr := chi.URLParam(r, "commentID")
 	commentID, err := strconv.ParseInt(commentIDStr, 10, 64)
 	if err != nil {
-		response.FailedResponse(w, http.StatusBadRequest, "Invalid comment ID")
+		response.FailedResponse(w, http.StatusBadRequest, "Invalid comment ID", nil)
 		return
 	}
 
@@ -166,7 +164,7 @@ func (h *PostHandler) DeleteComment(w http.ResponseWriter, r *http.Request) {
 
 	err = h.postUsecase.DeleteComment(reqCtx, commentID)
 	if err != nil {
-		response.FailedResponse(w, http.StatusInternalServerError, "Failed to delete comment")
+		response.FailedResponse(w, http.StatusInternalServerError, "Failed to delete comment", nil)
 		return
 	}
 
@@ -177,7 +175,7 @@ func (h *PostHandler) UpVote(w http.ResponseWriter, r *http.Request) {
 	postIDStr := chi.URLParam(r, "postID")
 	postID, err := strconv.ParseInt(postIDStr, 10, 64)
 	if err != nil {
-		response.FailedResponse(w, http.StatusBadRequest, err.Error())
+		response.FailedResponse(w, http.StatusBadRequest, err.Error(), nil)
 		return
 	}
 
@@ -190,7 +188,7 @@ func (h *PostHandler) UpVote(w http.ResponseWriter, r *http.Request) {
 
 	err = h.postUsecase.CreateUpVote(reqCtx, postID, userID)
 	if err != nil {
-		response.FailedResponse(w, http.StatusInternalServerError, err.Error())
+		response.FailedResponse(w, http.StatusInternalServerError, err.Error(), nil)
 		return
 	}
 
@@ -201,7 +199,7 @@ func (h *PostHandler) DownVote(w http.ResponseWriter, r *http.Request) {
 	postIDStr := chi.URLParam(r, "postID")
 	postID, err := strconv.ParseInt(postIDStr, 10, 64)
 	if err != nil {
-		response.FailedResponse(w, http.StatusBadRequest, err.Error())
+		response.FailedResponse(w, http.StatusBadRequest, err.Error(), nil)
 		return
 	}
 
@@ -214,7 +212,7 @@ func (h *PostHandler) DownVote(w http.ResponseWriter, r *http.Request) {
 
 	err = h.postUsecase.CreateDownVote(reqCtx, postID, userID)
 	if err != nil {
-		response.FailedResponse(w, http.StatusInternalServerError, err.Error())
+		response.FailedResponse(w, http.StatusInternalServerError, err.Error(), nil)
 		return
 	}
 

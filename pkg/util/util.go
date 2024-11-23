@@ -29,13 +29,13 @@ func ConvertTimeToString(time time.Time) string {
 func GetUserIdFromContext(w http.ResponseWriter, r *http.Request) (string, error) {
 	userID := r.Context().Value(customContext.UserIDKey)
 	if userID == "" {
-		response.FailedResponse(w, http.StatusUnauthorized, "User ID tidak ditemukan dalam konteks")
+		response.FailedResponse(w, http.StatusUnauthorized, "User ID tidak ditemukan dalam konteks", nil)
 		return "", errors.New("user id not found in context")
 	}
 
 	stringUserID, ok := userID.(string)
 	if !ok {
-		response.FailedResponse(w, http.StatusBadRequest, "User ID tidak valid dalam konteks")
+		response.FailedResponse(w, http.StatusBadRequest, "User ID tidak valid dalam konteks", nil)
 		return "", errors.New("invalid or missing userID in context")
 	}
 

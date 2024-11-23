@@ -27,25 +27,25 @@ func FileRoutes(router *chi.Mux, fileHandler *FileHandler, middleware middleware
 
 func (h *FileHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseMultipartForm(maxUploadSize); err != nil {
-		response.FailedResponse(w, http.StatusBadRequest, "File is too big. 2MB maximum.")
+		response.FailedResponse(w, http.StatusBadRequest, "File is too big. 2MB maximum.", nil)
 		return
 	}
 
 	file, header, err := r.FormFile("file")
 	if err != nil {
-		response.FailedResponse(w, http.StatusBadRequest, "Failed to get file.")
+		response.FailedResponse(w, http.StatusBadRequest, "Failed to get file.", nil)
 		return
 	}
 	defer file.Close()
 
 	if header.Size > maxUploadSize {
-		response.FailedResponse(w, http.StatusBadRequest, "The file size exceeds the 2MB limit.")
+		response.FailedResponse(w, http.StatusBadRequest, "The file size exceeds the 2MB limit.", nil)
 		return
 	}
 
 	url, err := h.fileUsecase.UploadFile(r.Context(), header)
 	if err != nil {
-		response.FailedResponse(w, http.StatusInternalServerError, err.Error())
+		response.FailedResponse(w, http.StatusInternalServerError, err.Error(), nil)
 		return
 	}
 

@@ -20,9 +20,9 @@ type Post struct {
 }
 
 type PostCreate struct {
-	Title   string `json:"title" validate:"required"`
-	Content string `json:"content" validate:"required"`
-	Image   string `json:"image"`
+	Title   string `json:"title" validate:"required,min=5"`
+	Content string `json:"content" validate:"required,min=10"`
+	Image   string `json:"image" validate:"omitempty,url"`
 }
 
 type PostResponse struct {
@@ -41,5 +41,6 @@ type PostResponse struct {
 }
 
 type PostFilter struct {
-	Keyword string `json:"keyword"`
+	Keyword string `json:"keyword" validate:"omitempty,min=3"`
 }
+

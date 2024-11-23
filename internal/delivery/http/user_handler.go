@@ -26,23 +26,23 @@ func NewUserHandler(userUC usecase.UserUsecaseItf) *UserHandler {
 
 func UserRoutes(router *chi.Mux, userHandle *UserHandler, middleware middleware.MiddlewareItf) {
 	// public routes
-	router.Post("/auth/register", userHandle.Register)
-	router.Post("/auth/login", userHandle.Login)
+	router.Post("/auth/register", middleware.ValidateMiddleware(http.HandlerFunc(userHandle.Register), &model.UserRegister{}))
+	router.Post("/auth/login", middleware.ValidateMiddleware(http.HandlerFunc(userHandle.Login), &model.UserLogin{}))
 
 	// private routes
 	router.Group(func(r chi.Router) {
 		r.Use(middleware.JwtAuthMiddleware)
 		r.Get("/auth/current-user", userHandle.GetCurrentUser)
-		r.Patch("/auth/update-photo", userHandle.UpdateUserPhoto)
-		r.Patch("/auth/update-data", userHandle.UpdateUserData)
+		r.Patch("/auth/update-photo", middleware.ValidateMiddleware(http.HandlerFunc(userHandle.UpdateUserPhoto), &model.UserUpdatePhoto{}))
+		r.Patch("/auth/update-data", middleware.ValidateMiddleware(http.HandlerFunc(userHandle.UpdateUserData), &model.UserUpdateData{}))
 	})
 }
 
 func (uh *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var req *model.UserRegister
-
+	
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.FailedResponse(w, http.StatusBadRequest, err.Error())
+		response.FailedResponse(w, http.StatusBadRequest, err.Error(), nil)
 		return
 	}
 
@@ -52,10 +52,10 @@ func (uh *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, customError.ErrEmailExist):
-			response.FailedResponse(w, http.StatusConflict, err.Error())
+			response.FailedResponse(w, http.StatusConflict, err.Error(), nil)
 			return
 		}
-		response.FailedResponse(w, http.StatusInternalServerError, err.Error())
+		response.FailedResponse(w, http.StatusInternalServerError, err.Error(), nil)
 		return
 	}
 
@@ -66,7 +66,7 @@ func (uh *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req *model.UserLogin
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.FailedResponse(w, http.StatusBadRequest, err.Error())
+		response.FailedResponse(w, http.StatusBadRequest, err.Error(), nil)
 		return
 	}
 
@@ -76,13 +76,13 @@ func (uh *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, customError.ErrEmailNotFound):
-			response.FailedResponse(w, http.StatusNotFound, err.Error())
+			response.FailedResponse(w, http.StatusNotFound, err.Error(), nil)
 			return
 		case errors.Is(err, customError.ErrIncorrectPassword):
-			response.FailedResponse(w, http.StatusUnauthorized, err.Error())
+			response.FailedResponse(w, http.StatusUnauthorized, err.Error(), nil)
 			return
 		default:
-			response.FailedResponse(w, http.StatusInternalServerError, err.Error())
+			response.FailedResponse(w, http.StatusInternalServerError, err.Error(), nil)
 			return
 		}
 	}
@@ -101,10 +101,10 @@ func (uh *UserHandler) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 	user, err := uh.userUC.GetUserById(reqCtx, userId)
 	if err != nil {
 		if errors.Is(err, customError.ErrUserNotFound) {
-			response.FailedResponse(w, http.StatusNotFound, err.Error())
+			response.FailedResponse(w, http.StatusNotFound, err.Error(), nil)
 			return
 		}
-		response.FailedResponse(w, http.StatusInternalServerError, err.Error())
+		response.FailedResponse(w, http.StatusInternalServerError, err.Error(), nil)
 		return
 	}
 
@@ -115,7 +115,7 @@ func (uh *UserHandler) UpdateUserPhoto(w http.ResponseWriter, r *http.Request) {
 	var req *model.UserUpdatePhoto
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.FailedResponse(w, http.StatusBadRequest, err.Error())
+		response.FailedResponse(w, http.StatusBadRequest, err.Error(), nil)
 		return
 	}
 
@@ -128,7 +128,7 @@ func (uh *UserHandler) UpdateUserPhoto(w http.ResponseWriter, r *http.Request) {
 
 	updatedUser, err := uh.userUC.UpdateUserPhoto(reqCtx, req, userId)
 	if err != nil {
-		response.FailedResponse(w, http.StatusInternalServerError, err.Error())
+		response.FailedResponse(w, http.StatusInternalServerError, err.Error(), nil)
 		return
 	}
 
@@ -139,7 +139,7 @@ func (uh *UserHandler) UpdateUserData(w http.ResponseWriter, r *http.Request) {
 	var req *model.UserUpdateData
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.FailedResponse(w, http.StatusBadRequest, err.Error())
+		response.FailedResponse(w, http.StatusBadRequest, err.Error(), nil)
 		return
 	}
 
@@ -152,7 +152,7 @@ func (uh *UserHandler) UpdateUserData(w http.ResponseWriter, r *http.Request) {
 
 	updatedUser, err := uh.userUC.UpdateUserData(reqCtx, req, userId)
 	if err != nil {
-		response.FailedResponse(w, http.StatusInternalServerError, err.Error())
+		response.FailedResponse(w, http.StatusInternalServerError, err.Error(), nil)
 		return
 	}
 

@@ -16,26 +16,26 @@ type User struct {
 }
 
 type UserRegister struct {
-	Name            string `json:"name"`
-	Email           string `json:"email"`
-	Password        string `json:"password"`
-	ConfirmPassword string `json:"confirm_password"`
+	Name            string `json:"name" validate:"required"`
+	Email           string `json:"email" validate:"required,email"`
+	Password        string `json:"password" validate:"required,min=8"`
+	ConfirmPassword string `json:"confirm_password" validate:"required,eqfield=Password"`
 }
 
 type UserLogin struct {
-	Name     string `json:"name"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required"`
 }
 
+
 type UserUpdateData struct {
-	Name     string `json:"name,omitempty"`
-	Email    string `json:"email,omitempty"`
-	Password string `json:"password,omitempty"`
+	Name     string `json:"name,omitempty" validate:"omitempty,min=2"`
+	Email    string `json:"email,omitempty" validate:"omitempty,email"`
+	Password string `json:"password,omitempty" validate:"omitempty,min=8"`
 }
 
 type UserUpdatePhoto struct {
-	PhotoUrl string `json:"photo_url"`
+	PhotoUrl string `json:"photo_url" validate:"required,url"`
 }
 
 type UserResponse struct {

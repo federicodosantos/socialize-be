@@ -15,7 +15,7 @@ type PostUsecaseItf interface {
 	GetPostByID(ctx context.Context, postID int64) (*model.PostResponse, error)
 	DeletePost(ctx context.Context, postID int64) error
 
-	CreateComment(ctx context.Context, req *model.CommentCreate, userID string) error
+	CreateComment(ctx context.Context, req *model.CommentCreate, userID string, postID int64) error
 	DeleteComment(ctx context.Context, id int64) error
 
 	CreateUpVote(ctx context.Context, postID int64, userID string) error
@@ -121,9 +121,9 @@ func (uc *PostUsecase) DeletePost(ctx context.Context, postID int64) error {
 	return uc.postRepo.DeletePost(ctx, postID)
 }
 
-func (uc *PostUsecase) CreateComment(ctx context.Context, req *model.CommentCreate, userID string) error {
+func (uc *PostUsecase) CreateComment(ctx context.Context, req *model.CommentCreate, userID string, postID int64) error {
 	comment := &model.Comment{
-		PostID:    req.PostID,
+		PostID:    postID,
 		UserID:    userID,
 		Comment:   req.Comment,
 		CreatedAt: time.Now(),

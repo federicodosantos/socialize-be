@@ -24,13 +24,14 @@ func SuccessResponse(w http.ResponseWriter, status int, message string, data any
 	json.NewEncoder(w).Encode(response)
 }
 
-func FailedResponse(w http.ResponseWriter, status int, message string) {
+func FailedResponse(w http.ResponseWriter, status int, message string, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 
 	errorResponse := HttpResponse{
 		Status:  status,
 		Message: message,
+		Data: data,
 	}
 
 	json.NewEncoder(w).Encode(errorResponse)

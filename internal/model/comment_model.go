@@ -16,8 +16,7 @@ type Comment struct {
 }
 
 type CommentCreate struct {
-	PostID  int64  `json:"post_id"`
-	Comment string `json:"comment"`
+	Comment string `json:"comment" validate:"required,min=5"`
 }
 
 type CommentResponse struct {
