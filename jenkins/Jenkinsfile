@@ -16,7 +16,7 @@ pipeline {
             steps {
                 sh 'docker --version'
                 sh 'docker compose version'
-                sh '${scannerHome}/bin/sonar-scanner --version'
+                sh 'curl --version'
             }
         }
         
