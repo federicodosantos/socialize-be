@@ -69,10 +69,9 @@ func (b *Bootstrap) InitApp() {
 	b.router.Use(middleware.LoggingMiddleware)
 
 	b.router.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"https://*", "http://*"},
+		AllowedOrigins:   []string{"https://*", "http://localhost:5173"},
 		AllowedMethods:   []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"*"},
-		AllowCredentials: true,
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
 	}))
 
 	// init routes
