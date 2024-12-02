@@ -5,6 +5,10 @@ pipeline {
         DOCKER_COMPOSE_FILE = "docker-compose.yaml"
         DOCKER_IMAGE = "backend-socialize"
         TARGET_URL = "http://localhost:8060"
+        SONARQUBE_INSTALLATION = "sonarqube"  
+        SONAR_PROJECT_KEY = "socialize-be-vulnerable" 
+        SONAR_PROJECT_NAME = "socialize be vulnerable"
+        SONAR_HOST_URL = "http://sonarqube.cupcakez.my.id:9000/" 
     }
 
     stages {
@@ -17,19 +21,25 @@ pipeline {
         
         stage('Clone Repository') {
             steps {
-                script{
-                sh 'echo Clone Repository'
+                script {
+                    echo 'Cloning Repository...'
                 }
-
                 git branch: 'vulnerable', url: 'https://github.com/federicodosantos/socialize-be.git'
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
-                echo 'Running SonarQube analysis...'
-                withSonarQubeEnv(installationName: 'sonarqube') {
-                    sh './mvnw clean org.sonarsource.scanner.maven:sonar-maven-plugin:3.9.0.2155:sonar'
+                echo 'Starting SonarQube analysis...'
+                withSonarQubeEnv(SONARQUBE_INSTALLATION) {
+                    script {
+                        sh """
+                        ./mvnw clean org.sonarsource.scanner.maven:sonar-maven-plugin:3.9.0.2155:sonar \
+                            -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                            -Dsonar.projectName="${SONAR_PROJECT_NAME}" \
+                            -Dsonar.host.url=${SONAR_HOST_URL}
+                        """
+                    }
                 }
             }
         }
