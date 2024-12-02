@@ -18,28 +18,27 @@ services:
       retries: 5
 
   db:
-    image: mysql:8
-    container_name: db-socialize-secure
-    env_file:
-      - ./.env
+    image: mariadb:11.0
+    container_name: db-socialize-vulnerable
     environment:
-      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
-      - MYSQL_DATABASE=${DB_NAME}
+      - MARIADB_ROOT_PASSWORD=${DB_PASSWORD}
+      - MARIADB_DATABASE=${DB_NAME}
+      - MARIADB_EXTRA_FLAGS=--skip-grant-tables
     ports:
-      - "${DB_PORT}:${DB_PORT}"
+      - "${DB_PORT}:3306"
     volumes:
-      - mysql_data:/var/lib/mysql
+      - mariadb_data:/var/lib/mysql
     networks:
       - socialize-networks
     restart: always
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost"]
       interval: 30s
       timeout: 10s
       retries: 5
 
 volumes:
-  mysql_data:
+  mariadb_data:
 
 networks:
   socialize-networks:
