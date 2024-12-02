@@ -3,20 +3,20 @@ pipeline {
 
     environment {
         DOCKER_COMPOSE_FILE = "docker-compose.yaml"
-        DOCKER_IMAGE = "backend-socialize"
         TARGET_URL = "http://localhost:8060"
         SONARQUBE_INSTALLATION = "sonarqube"  
-        SONAR_PROJECT_KEY = "socialize-be-vulnerable" 
-        SONAR_PROJECT_NAME = "socialize be vulnerable"
-        SONAR_HOST_URL = "http://sonarqube.cupcakez.my.id:9000/" 
+        scannerHome = tool 'sonarqube-scanner' 
     }
 
     stages {
         stage ('Preparation') {
             steps {
-                sh 'docker --version'
-                sh 'docker compose version'
-                sh 'curl --version'
+                sh """
+                    docker --version
+                    docker compose version
+                    curl --version
+                    ${scannerHome}/bin/sonar-scanner --version
+                """
             }
         }
         
@@ -35,10 +35,7 @@ pipeline {
                 withSonarQubeEnv(SONARQUBE_INSTALLATION) {
                     script {
                         sh """
-                        ./mvnw clean org.sonarsource.scanner.maven:sonar-maven-plugin:3.9.0.2155:sonar \
-                            -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
-                            -Dsonar.projectName="${SONAR_PROJECT_NAME}" \
-                            -Dsonar.host.url=${SONAR_HOST_URL}
+                            ${scannerHome}/bin/sonar-scanner
                         """
                     }
                 }
