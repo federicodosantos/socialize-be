@@ -11,6 +11,7 @@ import (
 	"github.com/federicodosantos/socialize/internal/repository"
 	customError "github.com/federicodosantos/socialize/pkg/custom-error"
 	"github.com/federicodosantos/socialize/pkg/jwt"
+	"github.com/federicodosantos/socialize/pkg/regex"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -38,13 +39,18 @@ func NewUserUsecase(userRepo repository.UserRepoItf,
 
 // Register implements UserUCItf.
 func (u *UserUsecase) Register(ctx context.Context, req *model.UserRegister) (*model.UserResponse, error) {
+	err := regex.Password(req.Password)
+	if err != nil {
+		return nil, err
+	}
+
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, err
 	}
 
 	createdUser := &model.User{
-		ID: 	   uuid.NewString(),
+		ID:        uuid.NewString(),
 		Name:      req.Name,
 		Email:     req.Email,
 		Password:  string(hashedPassword),

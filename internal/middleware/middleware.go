@@ -27,29 +27,29 @@ type MiddlewareItf interface {
 }
 
 type Middleware struct {
-	jwt    jwt.JWTItf
-	logger *zap.SugaredLogger
+	jwt      jwt.JWTItf
+	logger   *zap.SugaredLogger
 	validate *validator.Validate
 }
 
 func NewMiddleware(jwt jwt.JWTItf, logger *zap.SugaredLogger) MiddlewareItf {
 	return &Middleware{
-		jwt: jwt,
-		logger: logger,
-		validate: validator.New(),}
+		jwt:      jwt,
+		logger:   logger,
+		validate: validator.New()}
 }
 
 var (
-	rateLimit = 15
-	window = 10 * time.Second
-	requests = make(map[string]int)
+	rateLimit  = 15
+	window     = 10 * time.Second
+	requests   = make(map[string]int)
 	timestamps = make(map[string]time.Time)
-	mu sync.Mutex
+	mu         sync.Mutex
 )
 
 func (m *Middleware) JwtAuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		
+
 		bearerToken := r.Header.Get("Authorization")
 
 		if bearerToken == "" {
@@ -172,7 +172,7 @@ func (m *Middleware) RateLimiter(next http.Handler) http.Handler {
 	})
 }
 
-func getRealIP(r *http.Request) string  {
+func getRealIP(r *http.Request) string {
 	xff := r.Header.Get("X-Forwarded-For")
 	if xff != "" {
 		ips := strings.Split(xff, ",")
@@ -217,4 +217,3 @@ func formatValidationError(err validator.FieldError) string {
 		return fmt.Sprintf("The %s field is invalid.", err.Field())
 	}
 }
-

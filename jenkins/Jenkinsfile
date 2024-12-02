@@ -4,8 +4,6 @@ pipeline {
     environment {
         DOCKER_COMPOSE_FILE = "docker-compose.yml"
         DOCKER_IMAGE = "backend-socialize"
-        ZAP_BASE_URL = "http://zap:8080"
-        ZAP_API_KEY = "your-zap-api-key"
         TARGET_URL = "http://localhost:8060"
     }
 
@@ -40,33 +38,17 @@ pipeline {
             }
         }
 
-        stage('OWASP ZAP Security Scan') {
+        stage('SonarQube Analysis') {
             steps {
-                echo 'Running OWASP ZAP security scan...'
-                script {
-                    // Start ZAP as a Docker container
-                    sh 'docker run -d --name zap -p 8080:8080 owasp/zap2docker-stable zap.sh -daemon -port 8080'
-                    
-                    // Perform a security scan using ZAP's API
+                echo 'Running SonarQube analysis...'
+                withSonarQubeEnv('SonarQube') {
                     sh """
-                        curl -X POST $ZAP_BASE_URL/JSON/ascan/action/scan/?url=$TARGET_URL&apikey=$ZAP_API_KEY
-                    """
-                    
-                    // Wait for scan completion
-                    sleep(60)
-                    
-                    // Generate a report
-                    sh """
-                        curl -X GET $ZAP_BASE_URL/OTHER/core/other/htmlreport/?apikey=$ZAP_API_KEY -o zap_report.html
+                        ./gradlew sonarqube \
+                        -Dsonar.projectKey=backend-socialize \
+                        -Dsonar.host.url=$SONAR_HOST_URL \
+                        -Dsonar.login=$SONAR_AUTH_TOKEN
                     """
                 }
-            }
-        }
-
-        stage('Archive ZAP Report') {
-            steps {
-                echo 'Archiving ZAP report...'
-                archiveArtifacts artifacts: 'zap_report.html', allowEmptyArchive: false
             }
         }
 
@@ -82,7 +64,6 @@ pipeline {
         always {
             echo 'Cleaning up Docker resources...'
             sh 'docker-compose -f $DOCKER_COMPOSE_FILE down || true'
-            sh 'docker rm -f zap || true'
         }
         failure {
             echo 'Pipeline failed!'
