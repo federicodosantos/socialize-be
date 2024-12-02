@@ -1,6 +1,6 @@
 services:
   backend:
-    container_name: backend-socialize
+    container_name: backend-socialize-vulnerable
     build:
       context: .
       dockerfile: Dockerfile
@@ -19,7 +19,7 @@ services:
 
   db:
     image: mysql:8
-    container_name: db-socialize
+    container_name: db-socialize-vulnerable
     env_file:
       - ./.env
     environment:
