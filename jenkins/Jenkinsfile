@@ -55,7 +55,7 @@ pipeline {
             steps {
                 echo 'Checking service health...'
                 retry(3) {
-                    sh 'curl -f $TARGET_URL || exit 1'
+                    sh 'curl -f $TARGET_URL/health-check || exit 1'
                 }
             }
         }
