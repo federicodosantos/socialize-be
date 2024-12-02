@@ -1,13 +1,12 @@
 services:
   backend:
-    container_name: backend-socialize
+    container_name: backend-socialize-secure
     build:
       context: .
       dockerfile: Dockerfile
     restart: always
     ports:
-      - "80:8060"
-      - "443:8060"
+      - "${APP_PORT}:${APP_PORT}"
     networks:
       - socialize-networks
     depends_on:
@@ -20,7 +19,7 @@ services:
 
   db:
     image: mysql:8
-    container_name: db-socialize
+    container_name: db-socialize-secure
     env_file:
       - ./.env
     environment:
