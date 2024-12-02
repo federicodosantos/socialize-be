@@ -2,16 +2,26 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_COMPOSE_FILE = "docker-compose.yml"
+        DOCKER_COMPOSE_FILE = "docker-compose.yaml"
         DOCKER_IMAGE = "backend-socialize"
         TARGET_URL = "http://localhost:8060"
     }
 
     stages {
-        stage('Checkout Code') {
+        stage ('Preparation') {
             steps {
-                echo 'Checking out code from SCM...'
-                checkout scm
+                sh 'docker --version'
+                sh 'docker-compose --version'
+            }
+        }
+        
+        stage('Clone Repository') {
+            steps {
+                script{
+                sh 'echo Clone Repository'
+                }
+
+                git branch: 'vulnerable', url: 'https://github.com/federicodosantos/socialize-be.git'
             }
         }
 
@@ -24,17 +34,11 @@ pipeline {
             }
         }
 
-        stage('Build Docker Images') {
+        stage('Running Containers') {
             steps {
                 echo 'Building Docker image...'
-                sh 'docker-compose -f $DOCKER_COMPOSE_FILE build'
-            }
-        }
-
-        stage('Run Containers') {
-            steps {
-                echo 'Starting containers...'
-                sh 'docker-compose -f $DOCKER_COMPOSE_FILE up -d'
+                sh 'docker-compose -f $DOCKER_COMPOSE_FILE up --detach --build'
+                sh 'docker compose ps'
             }
         }
 
