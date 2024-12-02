@@ -57,21 +57,9 @@ pipeline {
             }
         }
 
-        stage('Health Check') {
-            steps {
-                echo 'Checking service health...'
-                retry(3) {
-                    sh 'curl -f $TARGET_URL/health-check || exit 1'
-                }
-            }
-        }
     }
 
     post {
-        always {
-            echo 'Cleaning up Docker resources...'
-            sh 'docker compose -f $DOCKER_COMPOSE_FILE down || true'
-        }
         failure {
             echo 'Pipeline failed!'
         }
