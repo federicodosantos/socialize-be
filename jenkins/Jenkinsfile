@@ -35,7 +35,8 @@ pipeline {
                 withSonarQubeEnv(SONARQUBE_INSTALLATION) {
                     script {
                         sh """
-                            ${scannerHome}/bin/sonar-scanner
+                            ${scannerHome}/bin/sonar-scanner \
+                            -Dsonar.projectKey=socialize-be-vulnerable \
                         """
                     }
                 }
