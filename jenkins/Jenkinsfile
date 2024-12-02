@@ -2,69 +2,64 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_COMPOSE_FILE = "docker-compose.yml"
-        DOCKER_IMAGE = "backend-socialize"
+        DOCKER_COMPOSE_FILE = "docker-compose.yaml"
         TARGET_URL = "http://localhost:8060"
+        SONARQUBE_INSTALLATION = "sonarqube"  
+        scannerHome = tool 'sonarqube-scanner' 
     }
 
     stages {
-        stage('Checkout Code') {
+        stage ('Preparation') {
             steps {
-                echo 'Checking out code from SCM...'
-                checkout scm
+                sh """
+                    docker --version
+                    docker compose version
+                    curl --version
+                    ${scannerHome}/bin/sonar-scanner --version
+                """
             }
         }
-
-        stage('Build Docker Images') {
+        
+        stage('Clone Repository') {
             steps {
-                echo 'Building Docker image...'
-                sh 'docker-compose -f $DOCKER_COMPOSE_FILE build'
-            }
-        }
-
-        stage('Run Containers') {
-            steps {
-                echo 'Starting containers...'
-                sh 'docker-compose -f $DOCKER_COMPOSE_FILE up -d'
-            }
-        }
-
-        stage('Health Check') {
-            steps {
-                echo 'Checking service health...'
-                retry(3) {
-                    sh 'curl -f $TARGET_URL || exit 1'
+                script {
+                    echo 'Cloning Repository...'
                 }
+                git branch: 'secure', url: 'https://github.com/federicodosantos/socialize-be.git'
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
-                echo 'Running SonarQube analysis...'
-                withSonarQubeEnv('SonarQube') {
-                    sh """
-                        ./gradlew sonarqube \
-                        -Dsonar.projectKey=backend-socialize \
-                        -Dsonar.host.url=$SONAR_HOST_URL \
-                        -Dsonar.login=$SONAR_AUTH_TOKEN
-                    """
+                echo 'Starting SonarQube analysis...'
+                withSonarQubeEnv(SONARQUBE_INSTALLATION) {
+                    script {
+                        sh """
+                            ${scannerHome}/bin/sonar-scanner \
+                            -Dsonar.projectKey=socialize-be-secure \
+                        """
+                    }
                 }
             }
         }
 
-        stage('Deploy to Environment') {
+        stage('Remove Containers') {
             steps {
-                echo 'Deploying services...'
-                sh 'docker-compose -f $DOCKER_COMPOSE_FILE up -d'
+                sh 'docker compose -f $DOCKER_COMPOSE_FILE down || true'
             }
         }
+
+        stage('Running Containers') {
+            steps {
+                echo 'Building Docker image...'
+                sh 'docker compose -f $DOCKER_COMPOSE_FILE up --detach --build'
+                sh 'docker compose ps'
+            }
+        }
+
     }
 
     post {
-        always {
-            echo 'Cleaning up Docker resources...'
-            sh 'docker-compose -f $DOCKER_COMPOSE_FILE down || true'
-        }
         failure {
             echo 'Pipeline failed!'
         }
