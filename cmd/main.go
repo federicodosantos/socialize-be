@@ -38,12 +38,12 @@ func main() {
 	bootstrap.InitApp()
 
 	server := &http.Server{
-		Addr:    fmt.Sprintf(":%s", os.Getenv("APP_PORT")),
+		Addr:    fmt.Sprintf(":%s", "8060"),
 		Handler: router,
 	}
 
 	go func() {
-		sugar.Infof("server is running on port %s", os.Getenv("APP_PORT"))
+		sugar.Infof("server is running on port %s", "8060")
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			sugar.Fatalf("server failed to start: %v", err)
 		}
