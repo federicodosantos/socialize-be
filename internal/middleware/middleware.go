@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	customContext "github.com/federicodosantos/socialize/pkg/context"
@@ -22,6 +23,7 @@ type MiddlewareItf interface {
 	JwtAuthMiddleware(next http.Handler) http.Handler
 	LoggingMiddleware(next http.Handler) http.Handler
 	ValidateMiddleware(next http.HandlerFunc, structToValidate interface{}) http.HandlerFunc
+	RateLimiter(next http.Handler) http.Handler
 }
 
 type Middleware struct {
@@ -36,6 +38,14 @@ func NewMiddleware(jwt jwt.JWTItf, logger *zap.SugaredLogger) MiddlewareItf {
 		logger: logger,
 		validate: validator.New(),}
 }
+
+var (
+	rateLimit = 15
+	window = 10 * time.Second
+	requests = make(map[string]int)
+	timestamps = make(map[string]time.Time)
+	mu sync.Mutex
+)
 
 func (m *Middleware) JwtAuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -128,6 +138,53 @@ func (m *Middleware) ValidateMiddleware(next http.HandlerFunc, structToValidate 
 
 		next(w, r)
 	}
+}
+
+func (m *Middleware) RateLimiter(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		defer mu.Unlock()
+
+		userID, ok := r.Context().Value("userID").(string)
+		if !ok || userID == "" {
+			userID = getRealIP(r)
+		}
+
+		if _, exists := requests[userID]; !exists {
+			requests[userID] = 0
+			timestamps[userID] = time.Now()
+		}
+
+		elapsed := time.Since(timestamps[userID])
+
+		if elapsed > window {
+			requests[userID] = 0
+			timestamps[userID] = time.Now()
+		}
+
+		if requests[userID] >= rateLimit {
+			response.FailedResponse(w, http.StatusTooManyRequests, "rate limit exceeded", nil)
+			return
+		}
+
+		requests[userID]++
+		next.ServeHTTP(w, r)
+	})
+}
+
+func getRealIP(r *http.Request) string  {
+	xff := r.Header.Get("X-Forwarded-For")
+	if xff != "" {
+		ips := strings.Split(xff, ",")
+		return strings.TrimSpace(ips[0])
+	}
+
+	xRealIP := r.Header.Get("X-Real-IP")
+	if xRealIP != "" {
+		return xRealIP
+	}
+
+	return ""
 }
 
 type responseRecorder struct {

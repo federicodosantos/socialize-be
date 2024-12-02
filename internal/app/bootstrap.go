@@ -66,6 +66,8 @@ func (b *Bootstrap) InitApp() {
 	// initialize middleware
 	middleware := middleware.NewMiddleware(jwtService, b.logger)
 
+	b.router.Use(middleware.RateLimiter)
+
 	b.router.Use(middleware.LoggingMiddleware)
 
 	b.router.Use(cors.Handler(cors.Options{
