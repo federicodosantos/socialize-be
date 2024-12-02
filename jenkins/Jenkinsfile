@@ -43,6 +43,12 @@ pipeline {
             }
         }
 
+        stage('Remove Containers') {
+            steps {
+                sh 'docker compose -f $DOCKER_COMPOSE_FILE down || true'
+            }
+        }
+
         stage('Running Containers') {
             steps {
                 echo 'Building Docker image...'
