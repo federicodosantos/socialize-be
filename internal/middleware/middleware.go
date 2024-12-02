@@ -91,44 +91,41 @@ func (m *Middleware) LoggingMiddleware(next http.Handler) http.Handler {
 
 func (m *Middleware) ValidateMiddleware(next http.HandlerFunc, structToValidate interface{}) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Body == nil {
-			log.Println("Request body is nil")
-			response.FailedResponse(w, http.StatusBadRequest, "Request body cannot be empty", nil)
-			return
-		}
-
-		bodyBytes, err := io.ReadAll(r.Body)
-		if err != nil || len(bodyBytes) == 0 {
-			m.logger.Info("Request body is empty or could not be read")
-			response.FailedResponse(w, http.StatusBadRequest, "Request body cannot be empty", nil)
-			return
-		}
-
-		// Set kembali body untuk middleware berikutnya atau handler
-		r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
-
-		// Decode JSON ke struct
-		if err := json.NewDecoder(r.Body).Decode(structToValidate); err != nil {
-			log.Printf("Failed to decode JSON: %v", err)
-			response.FailedResponse(w, http.StatusBadRequest, err.Error(), nil)
-			return
-		}
-
-		// Validasi struct
-		if err := m.validate.Struct(structToValidate); err != nil {
-			log.Printf("Validation error: %v", err)
-			validationErrors := make(map[string]string)
-			for _, err := range err.(validator.ValidationErrors) {
-				validationErrors[err.Field()] = formatValidationError(err)
+		if r.Method == "POST" || r.Method == "PUT" || r.Method == "PATCH" {
+			if r.Body == nil {
+				log.Println("Request body is nil")
+				response.FailedResponse(w, http.StatusBadRequest, "Request body cannot be empty", nil)
+				return
 			}
-			response.FailedResponse(w, http.StatusBadRequest, "Validation error", validationErrors)
-			return
+
+			bodyBytes, err := io.ReadAll(r.Body)
+			if err != nil || len(bodyBytes) == 0 {
+				m.logger.Info("Request body is empty or could not be read")
+				response.FailedResponse(w, http.StatusBadRequest, "Request body cannot be empty", nil)
+				return
+			}
+
+			r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+
+			if err := json.NewDecoder(r.Body).Decode(structToValidate); err != nil {
+				log.Printf("Failed to decode JSON: %v", err)
+				response.FailedResponse(w, http.StatusBadRequest, err.Error(), nil)
+				return
+			}
+
+			if err := m.validate.Struct(structToValidate); err != nil {
+				log.Printf("Validation error: %v", err)
+				validationErrors := make(map[string]string)
+				for _, err := range err.(validator.ValidationErrors) {
+					validationErrors[err.Field()] = formatValidationError(err)
+				}
+				response.FailedResponse(w, http.StatusBadRequest, "Validation error", validationErrors)
+				return
+			}
+
+			r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 		}
 
-		// Reset body lagi untuk handler agar bisa membaca ulang
-		r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
-
-		// Lanjutkan ke handler
 		next(w, r)
 	}
 }

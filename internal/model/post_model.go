@@ -41,6 +41,6 @@ type PostResponse struct {
 }
 
 type PostFilter struct {
-	Keyword string `json:"keyword" validate:"omitempty,min=3"`
+	Keyword string `json:"keyword" validate:"omitempty"`
 }
 
