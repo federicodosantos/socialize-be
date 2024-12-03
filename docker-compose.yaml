@@ -23,7 +23,6 @@ services:
     environment:
       - MARIADB_ROOT_PASSWORD=${DB_PASSWORD}
       - MARIADB_DATABASE=${DB_NAME}
-      - MARIADB_EXTRA_FLAGS=--skip-grant-tables
     ports:
       - "${DB_PORT}:3306"
     volumes:
