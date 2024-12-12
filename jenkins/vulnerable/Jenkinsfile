@@ -1,0 +1,88 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_COMPOSE_FILE = "docker-compose.yaml"
+        SONARQUBE_INSTALLATION = "sonarqube"
+        scannerHome = tool 'sonarqube-scanner'
+    }
+
+    stages {
+        stage ('Preparation') {
+            steps {
+                sh """
+                    docker --version
+                    docker compose version
+                    curl --version
+                    ${scannerHome}/bin/sonar-scanner --version
+                """
+            }
+        }
+
+        stage('Clone Repository') {
+            steps {
+                script {
+                    echo 'Cloning Repository...'
+                }
+                git branch: 'vulnerable', url: 'https://github.com/federicodosantos/socialize-be.git'
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                echo 'Starting SonarQube analysis...'
+                withSonarQubeEnv(SONARQUBE_INSTALLATION) {
+                    script {
+                        sh """
+                            ${scannerHome}/bin/sonar-scanner \
+                            -Dsonar.projectKey=socialize-be-secure \
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 10, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
+        stage('Run Unit Tests') {
+            steps {
+                script {
+                    docker.image('golang:1.23').inside('-v $WORKSPACE:/go/src/app -w /go/src/app') {
+                        sh 'echo Running Test'
+                        sh 'go mod download'
+                        sh 'go test -v ./...'
+                    }
+                }
+            }
+        }
+
+        stage('Remove Containers') {
+            steps {
+                sh 'docker compose -f $DOCKER_COMPOSE_FILE down || true'
+            }
+        }
+
+        stage('Running Containers') {
+            steps {
+                echo 'Building Docker image...'
+                sh 'docker compose -f $DOCKER_COMPOSE_FILE up --detach --build'
+                sh 'docker compose ps'
+            }
+        }
+    }
+
+    post {
+        failure {
+            echo 'Pipeline failed!'
+        }
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+    }
+}

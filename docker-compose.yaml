@@ -21,17 +21,30 @@ services:
     image: mariadb:11.0
     container_name: db-socialize-secure
     environment:
+      - MARIADB_ALLOW_EMPTY_ROOT_PASSWORD=0
       - MARIADB_ROOT_PASSWORD=${DB_PASSWORD}
       - MARIADB_DATABASE=${DB_NAME}
+      - MARIADB_USER=${DB_USER}
+      - MARIADB_PASSWORD=${DB_PASSWORD}
     ports:
-      - "${DB_PORT}:3306"
+      - "${DB_PORT}:${DB_PORT}"
     volumes:
       - mariadb_data:/var/lib/mysql
     networks:
       - socialize-networks
     restart: always
     healthcheck:
-      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost"]
+      test:
+        [
+          "CMD",
+          "mariadb-admin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "${DB_USER}",
+          "-p${DB_PASSWORD}",
+        ]
       interval: 30s
       timeout: 10s
       retries: 5
