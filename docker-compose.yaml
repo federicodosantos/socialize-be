@@ -6,7 +6,7 @@ services:
       dockerfile: Dockerfile
     restart: always
     ports:
-      - "8060:8060"
+      - "8061:8061"
     networks:
       - socialize-networks
     depends_on:
