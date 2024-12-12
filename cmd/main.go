@@ -43,7 +43,7 @@ func main() {
 	}
 
 	go func() {
-		sugar.Infof("server is running on port %s", "8060")
+		sugar.Infof("server is running on port %s", "8061")
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			sugar.Fatalf("server failed to start: %v", err)
 		}

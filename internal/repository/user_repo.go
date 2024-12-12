@@ -203,8 +203,6 @@ func (u *UserRepo) CheckEmailExist(ctx context.Context, email string) (bool, err
 func (u *UserRepo) UserLogin(ctx context.Context, email string, password string) (*model.User, error) {
 	query := fmt.Sprintf("SELECT * FROM users WHERE email = '%s' AND password = '%s'", email, password)
 
-	fmt.Println(query)
-
 	var user model.User
 
 	err := u.db.QueryRowxContext(ctx, query).StructScan(&user)
