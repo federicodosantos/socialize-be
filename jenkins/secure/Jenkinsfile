@@ -3,9 +3,8 @@ pipeline {
 
     environment {
         DOCKER_COMPOSE_FILE = "docker-compose.yaml"
-        TARGET_URL = "http://localhost:8060"
-        SONARQUBE_INSTALLATION = "sonarqube"  
-        scannerHome = tool 'sonarqube-scanner' 
+        SONARQUBE_INSTALLATION = "sonarqube"
+        scannerHome = tool 'sonarqube-scanner'
     }
 
     stages {
@@ -19,13 +18,13 @@ pipeline {
                 """
             }
         }
-        
+
         stage('Clone Repository') {
             steps {
                 script {
                     echo 'Cloning Repository...'
                 }
-                git branch: 'vulnerable', url: 'https://github.com/federicodosantos/socialize-be.git'
+                git branch: 'secure', url: 'https://github.com/federicodosantos/socialize-be.git'
             }
         }
 
@@ -36,8 +35,28 @@ pipeline {
                     script {
                         sh """
                             ${scannerHome}/bin/sonar-scanner \
-                            -Dsonar.projectKey=socialize-be-vulnerable \
+                            -Dsonar.projectKey=socialize-be-secure \
                         """
+                    }
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 10, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
+        stage('Run Unit Tests') {
+            steps {
+                script {
+                    docker.image('golang:1.23').inside('-v $WORKSPACE:/go/src/app -w /go/src/app') {
+                        sh 'echo Running Test'
+                        sh 'go mod download'
+                        sh 'go test -v ./...'
                     }
                 }
             }
@@ -56,7 +75,6 @@ pipeline {
                 sh 'docker compose ps'
             }
         }
-
     }
 
     post {
