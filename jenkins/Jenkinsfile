@@ -56,7 +56,7 @@ pipeline {
                     docker.image('golang:1.23').inside('-v $WORKSPACE:/go/src/app -w /go/src/app') {
                         sh 'echo Running Test'
                         sh 'go mod download'
-                        sh 'go test -v ./...'
+                        sh 'GOCACHE=/go/src/app/.cache go test -v ./...'
                     }
                 }
             }
