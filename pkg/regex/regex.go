@@ -6,12 +6,24 @@ import (
 )
 
 func Password(pass string) error {
-	pattern := `^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$`
+	if len(pass) < 8 {
+		return errors.New("Password must be at least 8 characters long")
+	}
 
-	regex := regexp.MustCompile(pattern)
+	if !regexp.MustCompile(`[a-z]`).MatchString(pass) {
+		return errors.New("Password must contain at least one lowercase letter")
+	}
 
-	if !regex.MatchString(pass) {
-		return errors.New("Password must contain at least one uppercase letter, one lowercase letter, one number and one special character")
+	if !regexp.MustCompile(`[A-Z]`).MatchString(pass) {
+		return errors.New("Password must contain at least one uppercase letter")
+	}
+
+	if !regexp.MustCompile(`\d`).MatchString(pass) {
+		return errors.New("Password must contain at least one number")
+	}
+
+	if !regexp.MustCompile(`[@$!%*?&#]`).MatchString(pass) {
+		return errors.New("Password must contain at least one special character")
 	}
 
 	return nil
