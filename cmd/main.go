@@ -38,7 +38,7 @@ func main() {
 	bootstrap.InitApp()
 
 	server := &http.Server{
-		Addr:    fmt.Sprintf(":%s", "8060"),
+		Addr:    fmt.Sprintf(":%s", "8061"),
 		Handler: router,
 	}
 
